@@ -62,7 +62,7 @@ MEANS = baseline_stats['mean']
 STDS = baseline_stats['std']
 CUSUM_K = 0.5
 CUSUM_H = 8.0
-METRIC_COLORS = ['#1A73E8','#1E8E3E','#E37400','#D93025','#9334E6','#12B5CB']
+METRIC_COLORS = ['#4FD8C8','#39FF6A','#FF9E45','#FF5C5C','#C58BFF','#FFE066']
 
 S = {
     'running':False,'attack_mode':False,'attack_type':'Reconnaissance',
@@ -264,18 +264,18 @@ app.index_string = """<!DOCTYPE html>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{
   width:100%;height:100%;overflow-x:hidden;
-  background:#F6F8FA;
+  background:#0A0F0C;
   font-family:Inter,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-  color:#1F1F1F;
+  color:#8CFFB0;
   -webkit-font-smoothing:antialiased;
 }
 ::-webkit-scrollbar{width:8px;height:8px}
 ::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:#DADCE0;border-radius:8px;border:2px solid #F6F8FA}
-::-webkit-scrollbar-thumb:hover{background:#BDC1C6}
+::-webkit-scrollbar-thumb{background:#2A4231;border-radius:8px;border:2px solid #0A0F0C}
+::-webkit-scrollbar-thumb:hover{background:#3C6148}
 
 @keyframes fadeUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
-@keyframes pulseDot{0%,100%{box-shadow:0 0 0 0 rgba(30,142,62,0.45)}70%{box-shadow:0 0 0 6px rgba(30,142,62,0)}}
+@keyframes pulseDot{0%,100%{box-shadow:0 0 0 0 rgba(57,255,106,0.5)}70%{box-shadow:0 0 0 6px rgba(57,255,106,0)}}
 @keyframes countdownTick{0%{opacity:0.7}100%{opacity:1}}
 @keyframes alertBar{0%,100%{opacity:1}50%{opacity:0.55}}
 
@@ -287,14 +287,15 @@ html,body{
 /* Material-style surface card */
 .card-panel{
   position:relative;
-  background:#FFFFFF;
-  border:1px solid #E3E6EA;
+  background:#111A14;
+  border:1px solid #223327;
   border-radius:12px;
-  box-shadow:0 1px 2px rgba(60,64,67,0.08),0 1px 3px 1px rgba(60,64,67,0.06);
+  box-shadow:0 1px 2px rgba(0,0,0,0.5),0 4px 14px rgba(0,0,0,0.35);
   transition:box-shadow 0.2s ease,border-color 0.2s ease;
 }
 .card-panel:hover{
-  box-shadow:0 1px 3px rgba(60,64,67,0.14),0 4px 12px 2px rgba(60,64,67,0.10);
+  border-color:#2F4A37;
+  box-shadow:0 1px 3px rgba(0,0,0,0.6),0 8px 22px rgba(0,0,0,0.45);
 }
 .hz{transition:box-shadow 0.2s ease}
 
@@ -303,42 +304,42 @@ html,body{
 
 .feed-row{
   padding:5px 8px;border-radius:6px;
-  border-bottom:1px solid #F1F3F4;
+  border-bottom:1px solid #182419;
   transition:background 0.12s;cursor:default;
 }
-.feed-row:hover{background:#F8F9FA}
+.feed-row:hover{background:#16241A}
 .anom-row{
   padding:5px 8px;border-radius:6px;
-  border-bottom:1px solid #FEF3E0;
+  border-bottom:1px solid #2A2214;
   transition:background 0.12s;cursor:default;
 }
-.anom-row:hover{background:#FFF8E1}
+.anom-row:hover{background:#241D10}
 .tl-row{padding:5px 2px;transition:background 0.12s;cursor:default;border-radius:6px}
-.tl-row:hover{background:#F8F9FA}
+.tl-row:hover{background:#16241A}
 .log-row{
   padding:4px 8px;border-radius:6px;
-  border-bottom:1px solid #F1F3F4;
+  border-bottom:1px solid #182419;
   transition:background 0.12s;cursor:default;
 }
-.log-row:hover{background:#F8F9FA}
+.log-row:hover{background:#16241A}
 
 /* Buttons: filled primary, filled danger, outlined, tonal */
 .btn-g,.btn-r,.btn-ghost,.btn-a{
   transition:box-shadow 0.15s ease,background 0.15s ease,border-color 0.15s ease,transform 0.1s ease;
 }
-.btn-g:hover{box-shadow:0 1px 3px rgba(60,64,67,0.3),0 4px 8px 3px rgba(60,64,67,0.15)!important;filter:brightness(1.04)}
-.btn-r:hover{box-shadow:0 1px 3px rgba(60,64,67,0.3),0 4px 8px 3px rgba(60,64,67,0.15)!important;filter:brightness(1.04)}
-.btn-ghost:hover{background:#F1F3F4!important;border-color:#C4C7CB!important}
-.btn-a:hover{background:#FFF3E0!important}
+.btn-g:hover{box-shadow:0 0 0 1px rgba(57,255,106,0.4),0 4px 14px rgba(57,255,106,0.25)!important;filter:brightness(1.06)}
+.btn-r:hover{box-shadow:0 0 0 1px rgba(255,92,92,0.4),0 4px 14px rgba(255,92,92,0.25)!important;filter:brightness(1.06)}
+.btn-ghost:hover{background:#16241A!important;border-color:#3C6148!important}
+.btn-a:hover{background:#2E2410!important}
 .btn-g:active,.btn-r:active,.btn-ghost:active,.btn-a:active{transform:translateY(1px)}
 
 .countdown-num{display:inline-block;transition:all 0.25s ease}
 
 .kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
 .kpi-tile{
-  background:#FFFFFF;border:1px solid #E3E6EA;border-radius:12px;
+  background:#111A14;border:1px solid #223327;border-radius:12px;
   padding:16px 18px;
-  box-shadow:0 1px 2px rgba(60,64,67,0.08),0 1px 3px 1px rgba(60,64,67,0.06);
+  box-shadow:0 1px 2px rgba(0,0,0,0.5),0 4px 14px rgba(0,0,0,0.35);
 }
 
 .zone-col{min-width:0;display:flex;flex-direction:column}
@@ -359,11 +360,11 @@ html,body{
 # Material-style light palette. Variable names kept (BG/CARD/…) so the
 # ~70 existing style references shift without a mass rename; TEXT replaces
 # the old TEXT (which now holds dark primary text, not white).
-BG='#F6F8FA';CARD='#FFFFFF';CARD2='#FFFFFF';BRDR='#E3E6EA'
-BLUE='#1A73E8';GREEN='#1E8E3E';AMBER='#E37400';RED='#D93025'
-DIM='#5F6368';TEXT='#1F1F1F';MONO='Inter,"Segoe UI",Roboto,Helvetica,Arial,sans-serif'
+BG='#0A0F0C';CARD='#111A14';CARD2='#111A14';BRDR='#223327'
+BLUE='#4FD8C8';GREEN='#39FF6A';AMBER='#FFB74D';RED='#FF5C5C'
+DIM='#5FAE7A';TEXT='#8CFFB0';MONO='Inter,"Segoe UI",Roboto,Helvetica,Arial,sans-serif'
 CODE='"Roboto Mono",Consolas,monospace'
-ORANGE='#E8710A';PURPLE='#9334E6'
+ORANGE='#FF9E45';PURPLE='#C58BFF'
 
 _ACRONYMS = {'cusum','soc','mitre','ids','ci','shap','att&ck','lstm','pabd','ip','c2','ddos','dos','sqli','xss'}
 def _sentence(text):
@@ -414,10 +415,10 @@ app.layout = html.Div([
         html.Div([
             html.Div('P',style={
                 'width':'34px','height':'34px','borderRadius':'9px',
-                'background':f'linear-gradient(135deg,{BLUE},#4285F4)',
-                'color':'#fff','fontFamily':MONO,'fontWeight':'700','fontSize':'16px',
+                'background':f'linear-gradient(135deg,{GREEN},#1FBF55)',
+                'color':'#05130A','fontFamily':MONO,'fontWeight':'700','fontSize':'16px',
                 'display':'flex','alignItems':'center','justifyContent':'center',
-                'marginRight':'12px','boxShadow':'0 1px 3px rgba(26,115,232,0.35)'
+                'marginRight':'12px','boxShadow':'0 0 14px rgba(57,255,106,0.35)'
             }),
             html.Div([
                 html.Div('PABD Threat Intelligence',style={
@@ -435,38 +436,38 @@ app.layout = html.Div([
                     'display':'inline-block'
                 }),
                 'Live',
-            ],className='chip',style={'background':'#E6F4EA','color':GREEN}),
+            ],className='chip',style={'background':'rgba(57,255,106,0.12)','color':GREEN}),
             html.Span(id='hdr',style={'color':DIM,'fontFamily':MONO,'fontSize':'12px','marginLeft':'16px'}),
         ],style={'display':'flex','alignItems':'center'}),
         html.Div([
             html.Button('Start monitoring',id='btn-normal',className='btn-g',style={
-                'background':BLUE,'border':'none','color':'#fff','fontFamily':MONO,
+                'background':GREEN,'border':'none','color':'#05130A','fontFamily':MONO,
                 'fontSize':'13px','fontWeight':'600','padding':'9px 18px',
                 'borderRadius':'8px','marginRight':'8px','cursor':'pointer',
-                'boxShadow':'0 1px 2px rgba(60,64,67,0.3)'
+                'boxShadow':'0 1px 2px rgba(0,0,0,0.5)'
             }),
             html.Button('Simulate attack',id='btn-attack',className='btn-r',style={
                 'background':RED,'border':'none','color':'#fff','fontFamily':MONO,
                 'fontSize':'13px','fontWeight':'600','padding':'9px 18px',
                 'borderRadius':'8px','marginRight':'8px','cursor':'pointer',
-                'boxShadow':'0 1px 2px rgba(60,64,67,0.3)'
+                'boxShadow':'0 1px 2px rgba(0,0,0,0.5)'
             }),
             html.Button('IDS compare',id='btn-compare',className='btn-a',style={
-                'background':'#FFF8E1','border':'1px solid #FFE0B2','color':AMBER,
+                'background':'rgba(255,183,77,0.12)','border':'1px solid #FFE0B2','color':AMBER,
                 'fontFamily':MONO,'fontSize':'13px','fontWeight':'600','padding':'9px 16px',
                 'borderRadius':'8px','marginRight':'8px','cursor':'pointer'
             }),
             html.Button('Reset',id='btn-reset',className='btn-ghost',style={
-                'background':'#fff','border':f'1px solid {BRDR}','color':TEXT,
+                'background':CARD,'border':f'1px solid {BRDR}','color':TEXT,
                 'fontFamily':MONO,'fontSize':'13px','fontWeight':'500','padding':'9px 16px',
                 'borderRadius':'8px','cursor':'pointer'
             }),
         ],style={'display':'flex','alignItems':'center'}),
     ],style={
-        'background':'#FFFFFF','padding':'12px 28px',
+        'background':CARD,'padding':'12px 28px',
         'display':'flex','justifyContent':'space-between','alignItems':'center',
         'borderBottom':f'1px solid {BRDR}','position':'sticky','top':'0','zIndex':'999',
-        'width':'100%','boxShadow':'0 1px 2px rgba(60,64,67,0.08)'
+        'width':'100%','boxShadow':'0 2px 12px rgba(0,0,0,0.5)'
     }),
 
     html.Div(id='kpi-strip',style={'padding':'20px 28px 0'}),
@@ -644,10 +645,10 @@ def update(n):
     if S['rec_hist']:
         y=S['rec_hist'];x=list(range(len(y)));mx=max(len(y),10)
         for y0,y1,col,bc,lt in [
-            (0,0.3,'rgba(26,115,232,0.06)',BLUE,'Normal'),
-            (0.3,0.6,'rgba(227,116,0,0.07)',AMBER,'Elevated'),
-            (0.6,0.85,'rgba(232,113,10,0.08)',ORANGE,'Warning'),
-            (0.85,1.0,'rgba(217,48,37,0.08)',RED,'Critical'),
+            (0,0.3,'rgba(79,216,200,0.10)',BLUE,'Normal'),
+            (0.3,0.6,'rgba(255,183,77,0.12)',AMBER,'Elevated'),
+            (0.6,0.85,'rgba(255,158,69,0.14)',ORANGE,'Warning'),
+            (0.85,1.0,'rgba(255,92,92,0.16)',RED,'Critical'),
         ]:
             rec_fig.add_shape(type='rect',x0=0,x1=mx,y0=y0,y1=y1,fillcolor=col,line_width=0,layer='below')
             rec_fig.add_annotation(x=mx-0.5,y=(y0+y1)/2,text=lt,showarrow=False,
@@ -657,9 +658,9 @@ def update(n):
         if S['pabd_fired'] and len(y)>5:
             upper=[min(v+0.04,1.0) for v in y];lower=[max(v-0.04,0.0) for v in y]
             rec_fig.add_trace(go.Scatter(x=x+x[::-1],y=upper+lower[::-1],fill='toself',
-                fillcolor='rgba(26,115,232,0.06)',line=dict(width=0),showlegend=False,hoverinfo='skip'))
+                fillcolor='rgba(79,216,200,0.10)',line=dict(width=0),showlegend=False,hoverinfo='skip'))
         rec_fig.add_trace(go.Scatter(x=x,y=y,fill='tozeroy',
-            fillcolor='rgba(26,115,232,0.08)',line=dict(color=lc,width=2.5),
+            fillcolor='rgba(79,216,200,0.14)',line=dict(color=lc,width=2.5),
             showlegend=False,hovertemplate='Risk: %{y:.3f}<extra></extra>'))
     rec_fig.update_layout(
         paper_bgcolor=CARD2,plot_bgcolor=CARD2,
@@ -691,7 +692,7 @@ def update(n):
         for c in conns:
             x0, y0 = src_pos[c['src']]
             x1, y1 = dst_pos[c['dst']]
-            color = RED if c['is_anom'] else 'rgba(26,115,232,0.35)'
+            color = RED if c['is_anom'] else 'rgba(79,216,200,0.45)'
             width = 2.2 if c['is_anom'] else 1.0
             net_graph_fig.add_trace(go.Scatter(
                 x=[x0, x1], y=[y0, y1], mode='lines',
@@ -734,7 +735,7 @@ def update(n):
         status_box=html.Div([
             overline('Current status'),
             html.Div([
-                chip('PABD fired',RED,'#FCE8E6'),
+                chip('PABD fired',RED,'rgba(255,92,92,0.12)'),
             ],style={'marginBottom':'10px'}),
             html.Div('Pre-attack behavioural drift detected',style={
                 'color':TEXT,'fontFamily':MONO,'fontSize':'18px','fontWeight':'600','lineHeight':'1.25','marginBottom':'8px'
@@ -746,8 +747,8 @@ def update(n):
             'borderLeft':f'4px solid {RED}'})
     else:
         rv=S['rec_score']
-        sc,st,bgc=((GREEN,'Normal','#E6F4EA') if rv<0.3 else (AMBER,'Elevated','#FFF8E1') if rv<0.6
-                   else (ORANGE,'Warning','#FDEEDC') if rv<0.85 else (RED,'Critical','#FCE8E6'))
+        sc,st,bgc=((GREEN,'Normal','rgba(57,255,106,0.12)') if rv<0.3 else (AMBER,'Elevated','rgba(255,183,77,0.12)') if rv<0.6
+                   else (ORANGE,'Warning','rgba(255,158,69,0.12)') if rv<0.85 else (RED,'Critical','rgba(255,92,92,0.12)'))
         status_box=html.Div([
             overline('Current status'),
             html.Div([chip(st,sc,bgc)],style={'marginBottom':'10px'}),
@@ -764,7 +765,7 @@ def update(n):
                 html.Span(S['predicted_attack'],style={'color':TEXT,'fontFamily':MONO,'fontSize':'22px','fontWeight':'700'}),
             ],style={'marginBottom':'6px'}),
             html.Div([
-                html.Span(f"{S['confidence']:.1f}% confidence",className='chip',style={'background':'#E6F4EA','color':GREEN}),
+                html.Span(f"{S['confidence']:.1f}% confidence",className='chip',style={'background':'rgba(57,255,106,0.12)','color':GREEN}),
             ],style={'marginBottom':'14px'}),
             html.Div('Top feature signals',style={'color':DIM,'fontFamily':MONO,'fontSize':'12px','letterSpacing':'0','marginBottom':'6px'}),
             *[html.Div([
@@ -855,7 +856,7 @@ def update(n):
             ],style={'marginBottom':'4px'}) for k,v in prof.items()],
             html.Div('Evasion attempt: detected',style={'color':ORANGE,'fontFamily':MONO,'fontSize':'12px','marginTop':'8px'}),
             html.Div('System response: active',style={'color':GREEN,'fontFamily':MONO,'fontSize':'12px','marginTop':'3px'}),
-        ],className='hz card-panel',style={'background':'#F3E8FD','border':f'1px solid {PURPLE}44','borderRadius':'10px','padding':'12px'})
+        ],className='hz card-panel',style={'background':'rgba(197,139,255,0.12)','border':f'1px solid {PURPLE}44','borderRadius':'10px','padding':'12px'})
     else:
         profile_box=html.Div()
 
@@ -868,7 +869,7 @@ def update(n):
                     html.Span(feat,style={'color':DIM,'fontFamily':MONO,'fontSize':'12px'}),
                     html.Span(f'{val:+.3f}',style={'color':color,'fontFamily':MONO,'fontSize':'12px','float':'right'}),
                 ]),
-                html.Div(style={'background':'#E8EAED','borderRadius':'3px','height':'5px','marginTop':'2px','overflow':'hidden'},children=[
+                html.Div(style={'background':'#1F2E23','borderRadius':'3px','height':'5px','marginTop':'2px','overflow':'hidden'},children=[
                     html.Div(style={'background':color,'width':f'{pct}%','height':'100%'})
                 ]),
             ],style={'marginBottom':'7px'})
@@ -877,7 +878,7 @@ def update(n):
             html.Div('Per-alert explanation for this window, not a static global ranking',
                      style={'color':DIM,'fontFamily':MONO,'fontSize':'11px','textAlign':'center','marginBottom':'8px'}),
             *[_bar(feat, val, raw) for feat, val, raw in S['shap_explain'][:6]],
-        ],className='hz card-panel',style={'background':'#E6F4EA','border':f'1px solid {GREEN}44','borderRadius':'10px','padding':'12px'})
+        ],className='hz card-panel',style={'background':'rgba(57,255,106,0.12)','border':f'1px solid {GREEN}44','borderRadius':'10px','padding':'12px'})
     else:
         shap_box=html.Div()
 
@@ -905,7 +906,7 @@ def update(n):
                 }) for i,stage in enumerate(KILL_CHAIN)
             ],style={'display':'flex'}),
         ]),
-    ],className='hz card-panel',style={'background':'#FFF8E1','border':f'1px solid {AMBER}44','borderRadius':'10px','padding':'12px','marginTop':'8px'})
+    ],className='hz card-panel',style={'background':'rgba(255,183,77,0.12)','border':f'1px solid {AMBER}44','borderRadius':'10px','padding':'12px','marginTop':'8px'})
 
     tl_steps=[
         (0.0,'T-23 min','Baseline monitoring active'),
