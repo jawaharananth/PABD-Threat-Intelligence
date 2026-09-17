@@ -6,23 +6,58 @@ import joblib
 import time
 import random
 import pandas as pd
+import shap
+import hashlib
 from tensorflow import keras
 
-scaler = joblib.load('scaler.pkl')
-iso_forest = joblib.load('isolation_forest.pkl')
-rf_classifier = joblib.load('random_forest.pkl')
-lstm_model = keras.models.load_model('lstm_model.keras')
+# The _demo6 files are fit on the original 6-feature schema, for the live
+# demo simulator and countdown LSTM (both only know that schema). The offline
+# research pipeline (scaler.pkl/isolation_forest.pkl/random_forest.pkl, no
+# suffix) now uses an expanded 10-feature schema for the paper's numbers --
+# do not point the live demo at those, its feature generator only produces
+# 6 values and the dimension mismatch will crash predict().
+scaler = joblib.load('scaler_demo6.pkl')
+iso_forest = joblib.load('isolation_forest_demo6.pkl')
+rf_classifier = joblib.load('random_forest_demo6.pkl')
+# Built once at startup -- TreeExplainer construction is the expensive part,
+# per-call .shap_values() on a single row is cheap enough to run live per alert.
+shap_explainer = shap.TreeExplainer(rf_classifier)
+# lstm_model_real_countdown.keras is trained on real CICIDS2017 attack-onset
+# timelines (train_lstm_countdown_real.py), not synthetic sequences. Held-out
+# MAE on real data: ~342s (n=50) -- report that number in any paper/report,
+# not the old synthetic-derived "~90s" figure.
+lstm_model = keras.models.load_model('lstm_model_real_countdown.keras')
 baseline_stats = joblib.load('baseline_stats.pkl')
+
+from mitre_map import LABEL_IDS, tag as mitre_tag
 
 FEATURES = ['connection_frequency','port_entropy','failed_auth_rate','packet_size_dist','protocol_ratio','burst_activity']
 FLABELS = ['Conn Freq','Port Entropy','Failed Auth','Pkt Size','Proto Ratio','Burst Act']
-ANAMES = {0:'Normal',1:'Reconnaissance',2:'Brute Force',3:'Lateral Movement',4:'DoS Preparation'}
-PROFILES = {
+# Label ids must match consolidate_data.py's LABEL_MAP exactly -- these were
+# previously swapped (1/2 reversed, 3/4 stale after the DoS-Preparation rename
+# and class expansion), which silently mislabeled real (non-simulated)
+# classifications in the live dashboard. Sourced from mitre_map.py so this
+# can't drift out of sync with the training pipeline's label ids again.
+ANAMES = LABEL_IDS
+
+_PROFILE_TEXT = {
     'Reconnaissance':{'Archetype':'The Slow Scanner','Technique':'Incremental port sweep','Velocity':'2-3 ports / min','Objective':'Vulnerability mapping'},
     'Brute Force':{'Archetype':'The Credential Tester','Technique':'Distributed login attempts','Velocity':'Low volume, persistent','Objective':'Authentication bypass'},
     'Lateral Movement':{'Archetype':'The Lateral Mover','Technique':'Internal network traversal','Velocity':'Slow and methodical','Objective':'Privilege escalation'},
-    'DoS Preparation':{'Archetype':'The Flood Preparer','Technique':'Resource exhaustion staging','Velocity':'Rapid burst spikes','Objective':'Service disruption'},
+    'DoS':{'Archetype':'The Flood Preparer','Technique':'Resource exhaustion, single-source','Velocity':'Rapid burst spikes','Objective':'Service disruption'},
+    'DDoS':{'Archetype':'The Distributed Flooder','Technique':'Volumetric multi-source flood','Velocity':'Sustained high-volume burst','Objective':'Service disruption at scale'},
+    'Bot':{'Archetype':'The Beacon','Technique':'Low-volume periodic C2 callback','Velocity':'Persistent, low-and-slow','Objective':'Command-and-control channel'},
+    'Web Attack':{'Archetype':'The Application Exploiter','Technique':'SQLi / XSS / credential stuffing on web app','Velocity':'Bursty, targeted requests','Objective':'Application compromise'},
 }
+# Merge in MITRE tactic/technique from the shared map so the two can't drift.
+PROFILES = {}
+for _name, _fields in _PROFILE_TEXT.items():
+    _m = mitre_tag(_name)
+    PROFILES[_name] = {
+        **_fields,
+        'MITRE Tactic': _m['tactic'] or '-',
+        'MITRE Technique': f"{_m['technique_id']} {_m['technique_name']}" if _m['technique_id'] else '-',
+    }
 MEANS = baseline_stats['mean']
 STDS = baseline_stats['std']
 CUSUM_K = 0.5
@@ -35,10 +70,10 @@ S = {
     'cusum':{f:0.0 for f in FEATURES},
     'cusum_hist':{f:[] for f in FEATURES},
     'rec_hist':[],'rec_score':0.0,
-    'network_feed':[],'anomaly_feed':[],
+    'network_feed':[],'anomaly_feed':[],'recent_conns':[],
     'pabd_fired':False,'pabd_step':0,
     'attack_classified':False,'predicted_attack':'',
-    'confidence':0.0,'feature_imp':{},
+    'confidence':0.0,'feature_imp':{},'shap_explain':[],
     'countdown':0.0,'countdown_max':0,'seq_buffer':[],
     'trad_fired':False,'trad_step':0,
     'comparison_mode':False,'metrics_breached':0,
@@ -121,6 +156,12 @@ def sim_step():
         S['anomaly_feed'].insert(0,f">> {src}  {proto}:{port}  score={ascore:.4f}")
         S['anomaly_feed'] = S['anomaly_feed'][:8]
 
+    # Structured (not string-parsed) recent-connection log for the live
+    # network graph -- keyed on host, not full src:port, so the same host
+    # reappearing lights up the same node instead of spawning a new one.
+    S['recent_conns'].insert(0, {'src':src,'dst':dst,'is_anom':is_anom})
+    S['recent_conns'] = S['recent_conns'][:16]
+
     for f in FEATURES:
         z = (metrics[f]-MEANS[f])/(STDS[f]+1e-8)
         S['cusum'][f] = max(0.0,S['cusum'][f]+z-CUSUM_K)
@@ -149,7 +190,22 @@ def sim_step():
         name = S['attack_type'] if S['attack_mode'] else ANAMES.get(int(pred),'Unknown')
         S['predicted_attack'] = name
         S['confidence'] = float(max(proba))*100
+        # feature_imp stays as the model's *global* feature importance (same
+        # every time, regardless of input) -- kept for the existing panel.
         S['feature_imp'] = dict(zip(FLABELS,rf_classifier.feature_importances_))
+        # shap_explain is the live, *per-alert* explanation: why THIS specific
+        # window got classified as THIS attack, not a static global ranking.
+        # This is what makes the alert panel say "why it fired" for real.
+        sv = shap_explainer.shap_values(Xs)
+        sv = np.array(sv)
+        if sv.ndim == 3:
+            row_shap = sv[0, :, int(pred)]
+        else:
+            row_shap = sv[0]
+        S['shap_explain'] = sorted(
+            zip(FLABELS, row_shap, [metrics[f] for f in FEATURES]),
+            key=lambda t: -abs(t[1])
+        )
         S['attack_classified'] = True
         log_event(f'Classified: {name} ({S["confidence"]:.1f}%)')
 
@@ -161,7 +217,14 @@ def sim_step():
             Xseq = np.array([S['seq_buffer']])
             Xsc = scaler.transform(Xseq.reshape(-1,len(FEATURES))).reshape(1,10,len(FEATURES))
             pr = float(lstm_model.predict(Xsc,verbose=0)[0][0])
-            S['countdown_max'] = max(int(pr*60*3),90)
+            # pr in [0,1] maps to real seconds-to-onset via the model's training
+            # horizon (20 windows * 120s/window = 2400s). This is the real,
+            # validated scale -- do not rescale it to make demo countdowns look
+            # shorter; if a live demo needs a faster on-stage countdown, apply
+            # a clearly-labeled "fast-forward" display multiplier instead of
+            # changing what the number means.
+            HORIZON_SECONDS = 20 * 120
+            S['countdown_max'] = max(int(pr*HORIZON_SECONDS), 60)
             S['countdown'] = float(S['countdown_max'])
             m,s = divmod(int(S['countdown']),60)
             log_event(f'LSTM: attack in ~{m:02d}:{s:02d}')
@@ -345,6 +408,10 @@ app.layout = html.Div([
                 html.Div(id='net-feed',style={'height':'175px','overflowY':'auto','fontFamily':MONO,'fontSize':'9px'})
             ]),
             card([
+                lbl('LIVE NETWORK GRAPH  ·  EXTERNAL -> INTERNAL',BLUE),
+                dcc.Graph(id='net-graph-fig',style={'height':'180px'},config={'displayModeBar':False}),
+            ]),
+            card([
                 lbl('ISOLATION FOREST  ·  ANOMALY STREAM',AMBER),
                 html.Div(id='anom-feed',style={'height':'110px','overflowY':'auto','fontFamily':MONO,'fontSize':'9px','color':AMBER})
             ],border='#FFB30022'),
@@ -375,7 +442,9 @@ app.layout = html.Div([
             html.Div(id='threat-box',style={'marginBottom':'8px'}),
             html.Div(id='timer-box',style={'marginBottom':'8px'}),
             html.Div(id='gauges-box',style={'marginBottom':'8px'}),
-            html.Div(id='profile-box'),
+            html.Div(id='profile-box',style={'marginBottom':'8px'}),
+            html.Div(id='shap-box',style={'marginBottom':'8px'}),
+            html.Div(id='killchain-box'),
         ],style={'width':'28%','padding':'8px 8px 8px 5px','flexShrink':'0'}),
 
     ],style={
@@ -404,10 +473,10 @@ def buttons(n1,n2,n3,n4):
             'cusum':{f:0.0 for f in FEATURES},
             'cusum_hist':{f:[] for f in FEATURES},
             'rec_hist':[],'rec_score':0.0,
-            'network_feed':[],'anomaly_feed':[],
+            'network_feed':[],'anomaly_feed':[],'recent_conns':[],
             'pabd_fired':False,'pabd_step':0,
             'attack_classified':False,'predicted_attack':'',
-            'confidence':0.0,'feature_imp':{},
+            'confidence':0.0,'feature_imp':{},'shap_explain':[],
             'countdown':0.0,'countdown_max':0,'seq_buffer':[],
             'trad_fired':False,'trad_step':0,'metrics_breached':0,
             'event_log':[],'pps':0,'pps_counter':0,
@@ -431,9 +500,12 @@ def buttons(n1,n2,n3,n4):
 @app.callback(
     [Output('net-feed','children'),Output('anom-feed','children'),
      Output('cusum-fig','figure'),Output('rec-fig','figure'),
+     Output('net-graph-fig','figure'),
      Output('status-box','children'),Output('threat-box','children'),
      Output('timer-box','children'),Output('gauges-box','children'),
-     Output('profile-box','children'),Output('timeline','children'),
+     Output('profile-box','children'),Output('shap-box','children'),
+     Output('killchain-box','children'),
+     Output('timeline','children'),
      Output('compare-box','children'),Output('hdr','children'),
      Output('event-log','children')],
     Input('tick','n_intervals'))
@@ -507,6 +579,57 @@ def update(n):
                    tickvals=[0,0.3,0.6,0.85,1.0],
                    title=dict(text='Risk Score',font=dict(size=8,color=DIM))),
         showlegend=False,
+    )
+
+    # Live network graph: external hosts (src) on the left, internal hosts
+    # (dst) on the right, edges colored by whether that connection was
+    # flagged anomalous. Node positions are hashed from the IP string so the
+    # same host lands in the same spot every frame instead of jittering.
+    def _host_pos(ip, side):
+        h = int(hashlib.md5(ip.encode()).hexdigest(), 16)
+        y = (h % 1000) / 1000.0
+        x = 0.08 + (h // 1000 % 100) / 100.0 * 0.06 if side == 'src' else 0.92 - (h // 1000 % 100) / 100.0 * 0.06
+        return x, y
+
+    net_graph_fig = go.Figure()
+    conns = S['recent_conns']
+    if conns:
+        src_pos = {c['src']: _host_pos(c['src'], 'src') for c in conns}
+        dst_pos = {c['dst']: _host_pos(c['dst'], 'dst') for c in conns}
+        for c in conns:
+            x0, y0 = src_pos[c['src']]
+            x1, y1 = dst_pos[c['dst']]
+            color = RED if c['is_anom'] else 'rgba(0,200,255,0.35)'
+            width = 2.2 if c['is_anom'] else 1.0
+            net_graph_fig.add_trace(go.Scatter(
+                x=[x0, x1], y=[y0, y1], mode='lines',
+                line=dict(color=color, width=width),
+                hoverinfo='skip', showlegend=False,
+            ))
+        anom_srcs = {c['src'] for c in conns if c['is_anom']}
+        src_x = [src_pos[s][0] for s in src_pos]
+        src_y = [src_pos[s][1] for s in src_pos]
+        src_color = [RED if s in anom_srcs else DIM for s in src_pos]
+        net_graph_fig.add_trace(go.Scatter(
+            x=src_x, y=src_y, mode='markers', showlegend=False,
+            marker=dict(size=9, color=src_color, symbol='circle',
+                        line=dict(width=1, color=BG)),
+            text=list(src_pos.keys()), hovertemplate='%{text}<extra>external</extra>',
+        ))
+        dst_x = [dst_pos[d][0] for d in dst_pos]
+        dst_y = [dst_pos[d][1] for d in dst_pos]
+        net_graph_fig.add_trace(go.Scatter(
+            x=dst_x, y=dst_y, mode='markers', showlegend=False,
+            marker=dict(size=11, color=GREEN, symbol='square',
+                        line=dict(width=1, color=BG)),
+            text=list(dst_pos.keys()), hovertemplate='%{text}<extra>internal</extra>',
+        ))
+    net_graph_fig.update_layout(
+        paper_bgcolor=CARD2, plot_bgcolor=CARD2,
+        margin=dict(l=8, r=8, t=8, b=8),
+        xaxis=dict(visible=False, range=[0, 1]),
+        yaxis=dict(visible=False, range=[0, 1]),
+        showlegend=False, height=180,
     )
 
     if S['pabd_fired']:
@@ -637,6 +760,54 @@ def update(n):
     else:
         profile_box=html.Div()
 
+    if S['shap_explain']:
+        def _bar(feat, val, raw_val):
+            pct = min(abs(val)/0.4, 1.0) * 100  # 0.4 ~= typical max |SHAP| seen in offline analysis
+            color = '#FF6D00' if val > 0 else '#00E676'
+            return html.Div([
+                html.Div([
+                    html.Span(feat,style={'color':DIM,'fontFamily':MONO,'fontSize':'9px'}),
+                    html.Span(f'{val:+.3f}',style={'color':color,'fontFamily':MONO,'fontSize':'9px','float':'right'}),
+                ]),
+                html.Div(style={'background':'#1a1f2e','borderRadius':'3px','height':'5px','marginTop':'2px','overflow':'hidden'},children=[
+                    html.Div(style={'background':color,'width':f'{pct}%','height':'100%'})
+                ]),
+            ],style={'marginBottom':'7px'})
+        shap_box=html.Div([
+            html.Div('--  WHY THIS FIRED (live SHAP)  --',style={'color':'#00E676','fontFamily':MONO,'fontSize':'9px','textAlign':'center','letterSpacing':'2px','marginBottom':'10px'}),
+            html.Div('Per-alert explanation for this window -- not a static global ranking.',
+                     style={'color':DIM,'fontFamily':MONO,'fontSize':'7.5px','textAlign':'center','marginBottom':'8px'}),
+            *[_bar(feat, val, raw) for feat, val, raw in S['shap_explain'][:6]],
+        ],className='hz',style={'background':'rgba(0,230,118,0.04)','border':'1px solid #00E67633','borderRadius':'6px','padding':'12px'})
+    else:
+        shap_box=html.Div()
+
+    # MITRE ATT&CK kill-chain progress bar -- driven by the real tactic
+    # mapping in mitre_map.py, not a cosmetic fixed sequence. Highlights up
+    # to and including the tactic of the currently classified attack.
+    KILL_CHAIN = ['Discovery','Initial Access','Credential Access','Command and Control','Impact']
+    if S['attack_classified'] and S['predicted_attack']:
+        cur_tactic = mitre_tag(S['predicted_attack'])['tactic']
+        cur_idx = KILL_CHAIN.index(cur_tactic) if cur_tactic in KILL_CHAIN else -1
+    else:
+        cur_idx = -1
+    killchain_box = html.Div([
+        html.Div('--  MITRE ATT&CK KILL CHAIN  --',style={'color':AMBER,'fontFamily':MONO,'fontSize':'9px','textAlign':'center','letterSpacing':'2px','marginBottom':'10px'}),
+        html.Div([
+            html.Div([
+                html.Div(stage,style={
+                    'color':(BG if i<=cur_idx else DIM),
+                    'fontFamily':MONO,'fontSize':'7.5px','textAlign':'center',
+                    'padding':'4px 2px',
+                    'background':(AMBER if i==cur_idx else (GREEN if i<cur_idx else 'transparent')),
+                    'border':f'1px solid {AMBER if i<=cur_idx else BRDR}',
+                    'borderRadius':'3px','flex':'1','marginRight':('3px' if i<len(KILL_CHAIN)-1 else '0'),
+                    'transition':'background 0.4s ease',
+                }) for i,stage in enumerate(KILL_CHAIN)
+            ],style={'display':'flex'}),
+        ]),
+    ],className='hz',style={'background':'rgba(255,179,0,0.04)','border':f'1px solid {AMBER}33','borderRadius':'6px','padding':'12px','marginTop':'8px'})
+
     tl_steps=[
         (0.0,'T-23 min','Baseline monitoring active'),
         (0.15,'T-18 min','Log enrichment triggered'),
@@ -692,10 +863,13 @@ def update(n):
     pct=(fp/tp*100) if tp>0 else 0
     hdr=f'Packets: {tp}  ·  Flagged: {fp} ({pct:.1f}%)  ·  {S["pps"]} pkt/s  ·  Step: {S["step"]}'
 
-    return (net_items,anom_items,cusum_fig,rec_fig,
+    return (net_items,anom_items,cusum_fig,rec_fig,net_graph_fig,
             status_box,threat_box,timer_box,gauges_box,
-            profile_box,tl_items,compare_box,hdr,log_items)
+            profile_box,shap_box,killchain_box,tl_items,compare_box,hdr,log_items)
 
 
 if __name__=='__main__':
-    app.run(debug=False,port=8050)
+    # host='0.0.0.0' required for this to be reachable from outside a Docker
+    # container -- the Dash/Flask default of 127.0.0.1 only accepts
+    # connections from inside the container itself.
+    app.run(debug=False,host='0.0.0.0',port=8050)

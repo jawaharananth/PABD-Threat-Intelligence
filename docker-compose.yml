@@ -1,0 +1,6 @@
+services:
+  pabd-dashboard:
+    build: .
+    ports:
+      - "8050:8050"
+    restart: unless-stopped

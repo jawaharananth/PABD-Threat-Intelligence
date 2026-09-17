@@ -9,15 +9,19 @@ import os
 
 # Load data
 print("Loading data...")
-df = pd.read_csv('network_data.csv')
+df = pd.read_csv('network_data_real.csv')
 
 FEATURES = [
     'connection_frequency',
-    'port_entropy', 
+    'port_entropy',
     'failed_auth_rate',
     'packet_size_dist',
     'protocol_ratio',
-    'burst_activity'
+    'burst_activity',
+    'syn_rate',
+    'flow_duration_cv',
+    'bytes_per_sec_mean',
+    'down_up_ratio_mean',
 ]
 
 # ─── SCALER ───────────────────────────────────────────
@@ -59,11 +63,20 @@ rf_classifier.fit(X_train_scaled, y_train)
 joblib.dump(rf_classifier, 'random_forest.pkl')
 
 # Evaluation
+# Label ids follow consolidate_data.py's LABEL_MAP: 0 Normal, 1 Brute Force,
+# 2 Reconnaissance, 3 DoS, 4 DDoS, 5 Bot, 6 Web Attack. labels= passed
+# explicitly since the smallest classes (DDoS n=11) can vanish from a random
+# test split by chance, which would otherwise misalign target_names.
+LABEL_NAMES = {0: 'Normal', 1: 'Brute Force', 2: 'Reconnaissance', 3: 'DoS',
+               4: 'DDoS', 5: 'Bot', 6: 'Web Attack'}
 y_pred = rf_classifier.predict(X_test_scaled)
+present_labels = sorted(set(y_test) | set(y_pred))
 print("\nRandom Forest Classification Report:")
 print(classification_report(
     y_test, y_pred,
-    target_names=['Normal', 'Reconnaissance', 'Brute Force', 'Lateral Movement', 'DoS Preparation']
+    labels=present_labels,
+    target_names=[LABEL_NAMES[l] for l in present_labels],
+    zero_division=0,
 ))
 
 # Feature importance
@@ -77,80 +90,60 @@ for feat, imp in sorted_features:
 joblib.dump(feature_importance_dict, 'feature_importance.pkl')
 print("\nRandom Forest saved.")
 
-# ─── LSTM ─────────────────────────────────────────────
-print("\nTraining LSTM...")
-from tensorflow import keras
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM, Dense, Dropout
-from tensorflow.keras.callbacks import EarlyStopping
+# ─── MITRE ATT&CK COVERAGE TABLE ───────────────────────
+from mitre_map import tag as mitre_tag
+print("\nMITRE ATT&CK coverage (real-data classes only -- Infiltration/Lateral")
+print("Movement excluded, see consolidate_data.py / README for why):")
+counts = df['attack_type'].value_counts()
+print(f"{'Class':<16}{'n windows':<11}{'Tactic':<22}{'Technique':<45}")
+for cls in LABEL_NAMES.values():
+    if cls == 'Normal' or cls not in counts.index:
+        continue
+    m = mitre_tag(cls)
+    technique = f"{m['technique_id']} {m['technique_name']}" if m['technique_id'] else '-'
+    print(f"{cls:<16}{counts[cls]:<11}{m['tactic']:<22}{technique:<45}")
 
-from data_generator import generate_pre_attack_sequence
+# LSTM training moved to train_lstm_countdown_real.py -- it trains on real
+# CICIDS attack-onset timelines (windows_*.csv) instead of data_generator.py's
+# synthetic generate_pre_attack_sequence(), which only produces the original
+# 6-feature schema and would break against this file's now-expanded FEATURES.
+# Run train_lstm_countdown_real.py separately after this script.
 
-# Generate sequences for LSTM training
-def create_lstm_dataset(sequence_length=10):
-    X_seq = []
-    y_seq = []
-    
-    attack_types = ['Reconnaissance', 'Brute Force', 'Lateral Movement']
-    
-    for attack_type in attack_types:
-        for _ in range(100):
-            seq = generate_pre_attack_sequence(attack_type, n_steps=50)
-            seq_features = seq[FEATURES].values
-            seq_features_scaled = scaler.transform(seq_features)
-            
-            for i in range(len(seq_features_scaled) - sequence_length):
-                X_seq.append(seq_features_scaled[i:i+sequence_length])
-                remaining = (len(seq_features_scaled) - i - sequence_length) / len(seq_features_scaled)
-                y_seq.append(remaining)
-    
-    return np.array(X_seq), np.array(y_seq)
+# ─── DEMO-SCALE MODELS (original 6 features) ──────────
+# app.py's live demo only simulates the original 6-feature schema, so the
+# 10-feature iso_forest/rf_classifier above can't score its live traffic
+# (dimension mismatch). Train matching 6-feature versions here instead of
+# silently pointing the demo at models it can't actually call. The 10-feature
+# models above are the ones to report in the paper/ablation -- these _demo6
+# files exist only to keep the live dashboard functional.
+DEMO_FEATURES = [
+    'connection_frequency', 'port_entropy', 'failed_auth_rate',
+    'packet_size_dist', 'protocol_ratio', 'burst_activity',
+]
+print("\nTraining demo-scale (6-feature) models for app.py + countdown LSTM...")
+scaler_demo6 = StandardScaler()
+scaler_demo6.fit(df[DEMO_FEATURES])
+joblib.dump(scaler_demo6, 'scaler_demo6.pkl')
 
-print("Generating LSTM training sequences...")
-X_lstm, y_lstm = create_lstm_dataset(sequence_length=10)
-print(f"LSTM dataset shape: {X_lstm.shape}")
+normal_data_demo6 = df[df['label'] == 0][DEMO_FEATURES]
+iso_forest_demo6 = IsolationForest(n_estimators=100, contamination=0.1, random_state=42)
+iso_forest_demo6.fit(normal_data_demo6)
+joblib.dump(iso_forest_demo6, 'isolation_forest_demo6.pkl')
 
-X_lstm_train, X_lstm_test, y_lstm_train, y_lstm_test = train_test_split(
-    X_lstm, y_lstm, test_size=0.2, random_state=42
+X6, y6 = df[DEMO_FEATURES], df['label']
+X6_train, X6_test, y6_train, y6_test = train_test_split(
+    X6, y6, test_size=0.2, random_state=42, stratify=y6
 )
+X6_train_scaled = scaler_demo6.transform(X6_train)
+X6_test_scaled = scaler_demo6.transform(X6_test)
+rf_demo6 = RandomForestClassifier(n_estimators=200, max_depth=15, random_state=42, class_weight='balanced')
+rf_demo6.fit(X6_train_scaled, y6_train)
+joblib.dump(rf_demo6, 'random_forest_demo6.pkl')
 
-# Build LSTM model
-lstm_model = Sequential([
-    LSTM(64, return_sequences=True, input_shape=(10, 6)),
-    Dropout(0.2),
-    LSTM(32, return_sequences=False),
-    Dropout(0.2),
-    Dense(16, activation='relu'),
-    Dense(1, activation='sigmoid')
-])
-
-lstm_model.compile(
-    optimizer='adam',
-    loss='mse',
-    metrics=['mae']
-)
-
-print("\nLSTM Model Summary:")
-lstm_model.summary()
-
-early_stopping = EarlyStopping(
-    monitor='val_loss',
-    patience=5,
-    restore_best_weights=True
-)
-
-print("\nTraining LSTM model...")
-history = lstm_model.fit(
-    X_lstm_train, y_lstm_train,
-    epochs=30,
-    batch_size=32,
-    validation_data=(X_lstm_test, y_lstm_test),
-    callbacks=[early_stopping],
-    verbose=1
-)
-
-lstm_model.save('lstm_model.keras')
-print("LSTM model saved.")
+feature_importance_demo6 = dict(zip(DEMO_FEATURES, rf_demo6.feature_importances_))
+joblib.dump(feature_importance_demo6, 'feature_importance_demo6.pkl')
+print("Demo-scale (6-feature) models saved: scaler_demo6.pkl, isolation_forest_demo6.pkl, "
+      "random_forest_demo6.pkl, feature_importance_demo6.pkl")
 
 # ─── BASELINE STATS ───────────────────────────────────
 print("\nSaving baseline statistics...")
@@ -162,11 +155,13 @@ baseline_stats = {
 joblib.dump(baseline_stats, 'baseline_stats.pkl')
 print("Baseline stats saved.")
 
-print("\n✅ ALL MODELS TRAINED AND SAVED SUCCESSFULLY")
+print("\nALL MODELS TRAINED AND SAVED SUCCESSFULLY")
 print("Files created:")
-for f in ['scaler.pkl', 'isolation_forest.pkl', 'random_forest.pkl', 'lstm_model.keras', 'baseline_stats.pkl', 'feature_importance.pkl']:
+for f in ['scaler.pkl', 'isolation_forest.pkl', 'random_forest.pkl', 'baseline_stats.pkl',
+          'feature_importance.pkl', 'scaler_demo6.pkl', 'isolation_forest_demo6.pkl',
+          'random_forest_demo6.pkl', 'feature_importance_demo6.pkl']:
     if os.path.exists(f):
-        print(f"  ✅ {f}")
+        print(f"  OK {f}")
     else:
-        print(f"  ❌ {f} MISSING")
+        print(f"  MISSING {f}")
         
