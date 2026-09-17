@@ -62,7 +62,7 @@ MEANS = baseline_stats['mean']
 STDS = baseline_stats['std']
 CUSUM_K = 0.5
 CUSUM_H = 8.0
-METRIC_COLORS = ['#00C8FF','#00E676','#FF6D00','#FFD600','#FF4081','#B388FF']
+METRIC_COLORS = ['#00FFC2','#39FF6A','#FF7A1A','#FFD600','#FF4081','#B388FF']
 
 S = {
     'running':False,'attack_mode':False,'attack_type':'Reconnaissance',
@@ -262,12 +262,12 @@ app.index_string = '''<!DOCTYPE html>
 {%css%}
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{width:100%;height:100%;overflow-x:hidden;background:#07090F;font-family:"IBM Plex Mono",monospace}
+html,body{width:100%;height:100%;overflow-x:hidden;background:#050B06;font-family:"IBM Plex Mono",monospace}
 ::-webkit-scrollbar{width:3px}
-::-webkit-scrollbar-track{background:#0B0F1A}
-::-webkit-scrollbar-thumb{background:#1A2640;border-radius:2px}
+::-webkit-scrollbar-track{background:#081208}
+::-webkit-scrollbar-thumb{background:#1E4527;border-radius:2px}
 
-@keyframes glowRed{0%,100%{box-shadow:0 0 8px #FF3D5740}50%{box-shadow:0 0 20px #FF3D57AA}}
+@keyframes glowRed{0%,100%{box-shadow:0 0 8px #FF3B3B40}50%{box-shadow:0 0 20px #FF3B3BAA}}
 @keyframes breathe{0%,100%{opacity:1}50%{opacity:0.35}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
 @keyframes countdownTick{0%{opacity:0.7}100%{opacity:1}}
@@ -283,27 +283,27 @@ html,body{width:100%;height:100%;overflow-x:hidden;background:#07090F;font-famil
 }
 .hz:hover{
   transform:scale(1.06);
-  box-shadow:0 6px 28px #00C8FF1A,0 0 0 1px #00C8FF1A;
+  box-shadow:0 6px 28px #00FFC21A,0 0 0 1px #00FFC21A;
   z-index:100
 }
 
 .feed-row{
   padding:2px 4px 2px 8px;
-  border-bottom:1px solid #0F1A2A;
+  border-bottom:1px solid #123018;
   border-left:2px solid transparent;
   transition:border-left-color 0.15s,background 0.15s;
   cursor:default
 }
-.feed-row:hover{border-left-color:#00C8FF44;background:#0D1525}
+.feed-row:hover{border-left-color:#00FFC244;background:#0E2410}
 
 .anom-row{
   padding:2px 4px 2px 8px;
-  border-bottom:1px solid #180E00;
+  border-bottom:1px solid #0E1F10;
   border-left:2px solid transparent;
   transition:border-left-color 0.15s,background 0.15s;
   cursor:default
 }
-.anom-row:hover{border-left-color:#FFB30055;background:#120C00}
+.anom-row:hover{border-left-color:#FFB30055;background:#0B1A0D}
 
 .tl-row{
   padding:3px 2px;
@@ -314,18 +314,18 @@ html,body{width:100%;height:100%;overflow-x:hidden;background:#07090F;font-famil
 
 .log-row{
   padding:2px 4px;
-  border-bottom:1px solid #0C1220;
+  border-bottom:1px solid #0A160B;
   transition:background 0.15s;
   cursor:default
 }
-.log-row:hover{background:#0D1525}
+.log-row:hover{background:#0E2410}
 
 .btn-g{transition:box-shadow 0.2s,transform 0.15s}
-.btn-g:hover{box-shadow:0 0 14px #00E67640!important;transform:translateY(-1px)}
+.btn-g:hover{box-shadow:0 0 14px #39FF6A40!important;transform:translateY(-1px)}
 .btn-r{transition:box-shadow 0.2s,transform 0.15s}
-.btn-r:hover{box-shadow:0 0 14px #FF3D5740!important;transform:translateY(-1px)}
+.btn-r:hover{box-shadow:0 0 14px #FF3B3B40!important;transform:translateY(-1px)}
 .btn-ghost{transition:border-color 0.2s,color 0.2s}
-.btn-ghost:hover{border-color:#3A5070!important;color:#8AB0D0!important}
+.btn-ghost:hover{border-color:#3A6B44!important;color:#7FDB93!important}
 .btn-a{transition:box-shadow 0.2s,border-color 0.2s}
 .btn-a:hover{box-shadow:0 0 10px #FFB30030!important;border-color:#FFB30055!important}
 
@@ -341,9 +341,9 @@ html,body{width:100%;height:100%;overflow-x:hidden;background:#07090F;font-famil
 </body>
 </html>'''
 
-BG='#07090F';CARD='#0B0F1A';CARD2='#0D1220';BRDR='#1A2640'
-BLUE='#00C8FF';GREEN='#00E676';AMBER='#FFB300';RED='#FF3D57'
-DIM='#3A5070';WHITE='#C8D8F0';MONO='"IBM Plex Mono",monospace'
+BG='#050B06';CARD='#081208';CARD2='#0A160B';BRDR='#1E4527'
+BLUE='#00FFC2';GREEN='#39FF6A';AMBER='#FFB300';RED='#FF3B3B'
+DIM='#3A6B44';WHITE='#B6FFC2';MONO='"IBM Plex Mono",monospace'
 
 def lbl(text,color,size='9px',spacing='1.5px',mb='7px'):
     return html.Div(text,style={
@@ -418,7 +418,7 @@ app.layout = html.Div([
             card([
                 lbl('SOC RESPONSE TIMELINE',GREEN),
                 html.Div(id='timeline',style={'fontFamily':MONO,'fontSize':'9.5px'})
-            ],border='#00E67622'),
+            ],border='#39FF6A22'),
             card([
                 lbl('SESSION EVENT LOG',DIM),
                 html.Div(id='event-log',style={'height':'95px','overflowY':'auto','fontFamily':MONO,'fontSize':'8.5px'})
@@ -554,14 +554,14 @@ def update(n):
         for y0,y1,col,bc,lt in [
             (0,0.3,'rgba(0,200,255,0.04)',BLUE,'NORMAL'),
             (0.3,0.6,'rgba(255,179,0,0.05)',AMBER,'ELEVATED'),
-            (0.6,0.85,'rgba(255,109,0,0.06)','#FF6D00','WARNING'),
+            (0.6,0.85,'rgba(255,109,0,0.06)','#FF7A1A','WARNING'),
             (0.85,1.0,'rgba(255,61,87,0.08)',RED,'CRITICAL'),
         ]:
             rec_fig.add_shape(type='rect',x0=0,x1=mx,y0=y0,y1=y1,fillcolor=col,line_width=0,layer='below')
             rec_fig.add_annotation(x=mx-0.5,y=(y0+y1)/2,text=lt,showarrow=False,
                 font=dict(size=8,color=bc,family='IBM Plex Mono'),xanchor='right',opacity=0.45)
         rv=S['rec_score']
-        lc=GREEN if rv<0.3 else AMBER if rv<0.6 else '#FF6D00' if rv<0.85 else RED
+        lc=GREEN if rv<0.3 else AMBER if rv<0.6 else '#FF7A1A' if rv<0.85 else RED
         if S['pabd_fired'] and len(y)>5:
             upper=[min(v+0.04,1.0) for v in y];lower=[max(v-0.04,0.0) for v in y]
             rec_fig.add_trace(go.Scatter(x=x+x[::-1],y=upper+lower[::-1],fill='toself',
@@ -639,7 +639,7 @@ def update(n):
                 'textAlign':'center','letterSpacing':'4px','padding':'10px 0 4px'
             }),
             html.Div('PRE-ATTACK BEHAVIOURAL DRIFT DETECTED',style={
-                'color':'#FF3D5766','fontFamily':MONO,'fontSize':'8px',
+                'color':'#FF3B3B66','fontFamily':MONO,'fontSize':'8px',
                 'textAlign':'center','letterSpacing':'2px','paddingBottom':'4px'
             }),
             html.Div(f'Step {S["pabd_step"]}  ·  {S["metrics_breached"]}/6 metrics breached',style={
@@ -651,7 +651,7 @@ def update(n):
         })
     else:
         rv=S['rec_score']
-        sc,st=((GREEN,'NORMAL') if rv<0.3 else (AMBER,'ELEVATED') if rv<0.6 else ('#FF6D00','WARNING') if rv<0.85 else (RED,'CRITICAL'))
+        sc,st=((GREEN,'NORMAL') if rv<0.3 else (AMBER,'ELEVATED') if rv<0.6 else ('#FF7A1A','WARNING') if rv<0.85 else (RED,'CRITICAL'))
         status_box=html.Div([
             html.Div(f'● {st}',style={'color':sc,'fontFamily':MONO,'fontSize':'20px','fontWeight':'700','textAlign':'center','padding':'8px 0 4px'}),
             html.Div(f'Risk Score  {rv:.4f}',style={'color':DIM,'fontFamily':MONO,'fontSize':'10px','textAlign':'center'}),
@@ -664,7 +664,7 @@ def update(n):
             html.Div('--  THREAT  CLASSIFIED  --',style={'color':RED,'fontFamily':MONO,'fontSize':'9px','textAlign':'center','letterSpacing':'2px','marginBottom':'10px'}),
             html.Div([
                 html.Span('Attack Type:  ',style={'color':DIM,'fontFamily':MONO,'fontSize':'10px'}),
-                html.Span(S['predicted_attack'],style={'color':'#FF8C00','fontFamily':MONO,'fontSize':'13px','fontWeight':'700'}),
+                html.Span(S['predicted_attack'],style={'color':'#FF9A2E','fontFamily':MONO,'fontSize':'13px','fontWeight':'700'}),
             ],style={'marginBottom':'5px'}),
             html.Div([
                 html.Span('Confidence:  ',style={'color':DIM,'fontFamily':MONO,'fontSize':'10px'}),
@@ -709,7 +709,7 @@ def update(n):
                     'fontWeight':'700','letterSpacing':'2px','lineHeight':'1'
                 }),
                 html.Span(f'.{ms}',style={
-                    'color':'#FF3D5788','fontFamily':MONO,'fontSize':'22px',
+                    'color':'#FF3B3B88','fontFamily':MONO,'fontSize':'22px',
                     'fontWeight':'700','lineHeight':'1','verticalAlign':'bottom'
                 }),
             ],style={'textAlign':'center','marginBottom':'4px'}),
@@ -754,7 +754,7 @@ def update(n):
                 html.Span(f'{k}:  ',style={'color':DIM,'fontFamily':MONO,'fontSize':'9px'}),
                 html.Span(v,style={'color':BLUE,'fontFamily':MONO,'fontSize':'9.5px'}),
             ],style={'marginBottom':'4px'}) for k,v in prof.items()],
-            html.Div('Evasion Attempt:  DETECTED',style={'color':'#FF6D00','fontFamily':MONO,'fontSize':'9.5px','marginTop':'8px'}),
+            html.Div('Evasion Attempt:  DETECTED',style={'color':'#FF7A1A','fontFamily':MONO,'fontSize':'9.5px','marginTop':'8px'}),
             html.Div('System Response:  ACTIVE',style={'color':GREEN,'fontFamily':MONO,'fontSize':'9.5px','marginTop':'3px'}),
         ],className='hz',style={'background':'rgba(179,136,255,0.04)','border':'1px solid #B388FF33','borderRadius':'6px','padding':'12px'})
     else:
@@ -763,22 +763,22 @@ def update(n):
     if S['shap_explain']:
         def _bar(feat, val, raw_val):
             pct = min(abs(val)/0.4, 1.0) * 100  # 0.4 ~= typical max |SHAP| seen in offline analysis
-            color = '#FF6D00' if val > 0 else '#00E676'
+            color = '#FF7A1A' if val > 0 else '#39FF6A'
             return html.Div([
                 html.Div([
                     html.Span(feat,style={'color':DIM,'fontFamily':MONO,'fontSize':'9px'}),
                     html.Span(f'{val:+.3f}',style={'color':color,'fontFamily':MONO,'fontSize':'9px','float':'right'}),
                 ]),
-                html.Div(style={'background':'#1a1f2e','borderRadius':'3px','height':'5px','marginTop':'2px','overflow':'hidden'},children=[
+                html.Div(style={'background':'#0F2012','borderRadius':'3px','height':'5px','marginTop':'2px','overflow':'hidden'},children=[
                     html.Div(style={'background':color,'width':f'{pct}%','height':'100%'})
                 ]),
             ],style={'marginBottom':'7px'})
         shap_box=html.Div([
-            html.Div('--  WHY THIS FIRED (live SHAP)  --',style={'color':'#00E676','fontFamily':MONO,'fontSize':'9px','textAlign':'center','letterSpacing':'2px','marginBottom':'10px'}),
+            html.Div('--  WHY THIS FIRED (live SHAP)  --',style={'color':'#39FF6A','fontFamily':MONO,'fontSize':'9px','textAlign':'center','letterSpacing':'2px','marginBottom':'10px'}),
             html.Div('Per-alert explanation for this window -- not a static global ranking.',
                      style={'color':DIM,'fontFamily':MONO,'fontSize':'7.5px','textAlign':'center','marginBottom':'8px'}),
             *[_bar(feat, val, raw) for feat, val, raw in S['shap_explain'][:6]],
-        ],className='hz',style={'background':'rgba(0,230,118,0.04)','border':'1px solid #00E67633','borderRadius':'6px','padding':'12px'})
+        ],className='hz',style={'background':'rgba(0,230,118,0.04)','border':'1px solid #39FF6A33','borderRadius':'6px','padding':'12px'})
     else:
         shap_box=html.Div()
 
@@ -825,7 +825,7 @@ def update(n):
         tl_items.append(html.Div([
             html.Span(f'{icon} ',style={'color':col}),
             html.Span(f'{t}  ',style={'color':col if col!=BRDR else DIM}),
-            html.Span(action,style={'color':col if col!=BRDR else '#253545'}),
+            html.Span(action,style={'color':col if col!=BRDR else '#274A2C'}),
         ],className='tl-row',style={'fontFamily':MONO,'fontSize':'9.5px'}))
 
     if S.get('comparison_mode'):
@@ -840,11 +840,11 @@ def update(n):
                     html.Div('Detects:  PRE-ATTACK PHASE',style={'color':DIM,'fontFamily':MONO,'fontSize':'9px','marginTop':'3px'}),
                 ],style={'flex':1,'padding':'10px','border':f'1px solid {GREEN}33','borderRadius':'4px','marginRight':'6px','background':f'{GREEN}06'}),
                 html.Div([
-                    html.Div('TRADITIONAL IDS',style={'color':'#FF6D00','fontFamily':MONO,'fontSize':'9px','fontWeight':'700','marginBottom':'5px'}),
-                    html.Div(f"Status:  {'FIRED' if S['trad_fired'] else 'No alert'}",style={'color':'#FF6D00' if S['trad_fired'] else DIM,'fontFamily':MONO,'fontSize':'9.5px'}),
+                    html.Div('TRADITIONAL IDS',style={'color':'#FF7A1A','fontFamily':MONO,'fontSize':'9px','fontWeight':'700','marginBottom':'5px'}),
+                    html.Div(f"Status:  {'FIRED' if S['trad_fired'] else 'No alert'}",style={'color':'#FF7A1A' if S['trad_fired'] else DIM,'fontFamily':MONO,'fontSize':'9.5px'}),
                     html.Div(f"Step:  {S['trad_step'] if S['trad_fired'] else '--'}",style={'color':DIM,'fontFamily':MONO,'fontSize':'9px','marginTop':'3px'}),
                     html.Div('Detects:  EXECUTION PHASE',style={'color':DIM,'fontFamily':MONO,'fontSize':'9px','marginTop':'3px'}),
-                ],style={'flex':1,'padding':'10px','border':'1px solid #FF6D0033','borderRadius':'4px','background':'#FF6D0006'}),
+                ],style={'flex':1,'padding':'10px','border':'1px solid #FF7A1A33','borderRadius':'4px','background':'#FF7A1A06'}),
             ],style={'display':'flex','marginBottom':'8px'}),
             html.Div(
                 f'Lead time advantage:  {adv} steps earlier' if adv else 'Traditional IDS has not fired yet.',
