@@ -262,76 +262,148 @@ app.index_string = '''<!DOCTYPE html>
 {%css%}
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{width:100%;height:100%;overflow-x:hidden;background:#050B06;font-family:"IBM Plex Mono",monospace}
-::-webkit-scrollbar{width:3px}
+html,body{
+  width:100%;height:100%;overflow-x:hidden;
+  background:
+    radial-gradient(ellipse 1200px 800px at 15% -10%, #0A2010AA 0%, transparent 60%),
+    radial-gradient(ellipse 1000px 700px at 100% 10%, #08170CAA 0%, transparent 55%),
+    repeating-linear-gradient(0deg, transparent 0px, transparent 23px, #39FF6A08 23px, #39FF6A08 24px),
+    repeating-linear-gradient(90deg, transparent 0px, transparent 23px, #39FF6A05 23px, #39FF6A05 24px),
+    #050B06;
+  font-family:"IBM Plex Mono",monospace;
+}
+::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-track{background:#081208}
-::-webkit-scrollbar-thumb{background:#1E4527;border-radius:2px}
+::-webkit-scrollbar-thumb{background:#2A5A34;border-radius:2px}
+::-webkit-scrollbar-thumb:hover{background:#39FF6A66}
 
-@keyframes glowRed{0%,100%{box-shadow:0 0 8px #FF3B3B40}50%{box-shadow:0 0 20px #FF3B3BAA}}
-@keyframes breathe{0%,100%{opacity:1}50%{opacity:0.35}}
-@keyframes fadeUp{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
-@keyframes countdownTick{0%{opacity:0.7}100%{opacity:1}}
+@keyframes glowRed{0%,100%{box-shadow:0 0 8px #FF3B3B40}50%{box-shadow:0 0 22px #FF3B3BCC}}
+@keyframes breathe{0%,100%{opacity:1}50%{opacity:0.3}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes countdownTick{0%{opacity:0.6;transform:scale(0.96)}100%{opacity:1;transform:scale(1)}}
+@keyframes scanline{0%{transform:translateY(-100%)}100%{transform:translateY(100vh)}}
+@keyframes borderPulse{0%,100%{opacity:0.5}50%{opacity:1}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
 
-.glow-red{animation:glowRed 1.5s ease-in-out infinite}
-.live-dot{animation:breathe 2.2s ease-in-out infinite}
-.fade-up{animation:fadeUp 0.35s ease forwards}
-.cd-tick{animation:countdownTick 0.65s ease}
+.glow-red{animation:glowRed 1.4s ease-in-out infinite}
+.live-dot{animation:breathe 2s ease-in-out infinite}
+.fade-up{animation:fadeUp 0.4s ease forwards}
+.cd-tick{animation:countdownTick 0.6s cubic-bezier(0.34,1.56,0.64,1)}
+
+.scanline-overlay{
+  position:fixed;top:0;left:0;width:100%;height:140px;pointer-events:none;
+  background:linear-gradient(180deg, transparent 0%, #39FF6A0D 50%, transparent 100%);
+  animation:scanline 7s linear infinite;z-index:9998;
+}
+
+/* Card system: subtle glass panel with an accent top-edge and inset glow */
+.card-panel{
+  position:relative;z-index:1;
+  background:linear-gradient(165deg, #0A160BEE 0%, #071009EE 100%);
+  border:1px solid #1E4527;
+  border-radius:10px;
+  box-shadow:0 1px 0 #39FF6A0A inset, 0 12px 24px -12px #000000AA;
+  transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1),
+             box-shadow 0.3s ease, border-color 0.3s ease;
+  will-change:transform;
+  backdrop-filter:blur(2px);
+}
+.card-panel::before{
+  content:'';position:absolute;top:0;left:14px;right:14px;height:1px;
+  background:linear-gradient(90deg, transparent, #39FF6A88, transparent);
+}
+.card-panel:hover{
+  transform:translateY(-2px);
+  border-color:#39FF6A55;
+  box-shadow:0 1px 0 #39FF6A1A inset, 0 20px 36px -16px #000000CC, 0 0 0 1px #39FF6A22;
+  z-index:50;
+}
+
+.card-head{
+  display:flex;align-items:center;gap:7px;margin-bottom:9px;
+}
+.card-head .dot{
+  width:5px;height:5px;border-radius:50%;flex-shrink:0;
+  box-shadow:0 0 6px currentColor;
+}
 
 .hz{
   transition:transform 0.25s cubic-bezier(0.34,1.56,0.64,1),box-shadow 0.25s ease;
   position:relative;z-index:1;will-change:transform
 }
 .hz:hover{
-  transform:scale(1.06);
-  box-shadow:0 6px 28px #00FFC21A,0 0 0 1px #00FFC21A;
+  transform:scale(1.05);
+  box-shadow:0 8px 30px #00FFC222,0 0 0 1px #00FFC233;
   z-index:100
 }
 
 .feed-row{
-  padding:2px 4px 2px 8px;
+  padding:3px 6px 3px 10px;
   border-bottom:1px solid #123018;
   border-left:2px solid transparent;
-  transition:border-left-color 0.15s,background 0.15s;
+  transition:border-left-color 0.15s,background 0.15s,padding-left 0.15s;
   cursor:default
 }
-.feed-row:hover{border-left-color:#00FFC244;background:#0E2410}
+.feed-row:hover{border-left-color:#00FFC2;background:#0E241080;padding-left:12px}
 
 .anom-row{
-  padding:2px 4px 2px 8px;
+  padding:3px 6px 3px 10px;
   border-bottom:1px solid #0E1F10;
   border-left:2px solid transparent;
-  transition:border-left-color 0.15s,background 0.15s;
+  transition:border-left-color 0.15s,background 0.15s,padding-left 0.15s;
   cursor:default
 }
-.anom-row:hover{border-left-color:#FFB30055;background:#0B1A0D}
+.anom-row:hover{border-left-color:#FFB300;background:#1A130080;padding-left:12px}
 
 .tl-row{
-  padding:3px 2px;
+  padding:4px 3px;
   transition:padding-left 0.15s,opacity 0.15s;
   cursor:default
 }
-.tl-row:hover{padding-left:6px;opacity:0.85}
+.tl-row:hover{padding-left:8px;opacity:0.9}
 
 .log-row{
-  padding:2px 4px;
+  padding:3px 6px;
   border-bottom:1px solid #0A160B;
-  transition:background 0.15s;
+  transition:background 0.15s,padding-left 0.15s;
   cursor:default
 }
-.log-row:hover{background:#0E2410}
+.log-row:hover{background:#0E241080;padding-left:4px}
 
-.btn-g{transition:box-shadow 0.2s,transform 0.15s}
-.btn-g:hover{box-shadow:0 0 14px #39FF6A40!important;transform:translateY(-1px)}
-.btn-r{transition:box-shadow 0.2s,transform 0.15s}
-.btn-r:hover{box-shadow:0 0 14px #FF3B3B40!important;transform:translateY(-1px)}
-.btn-ghost{transition:border-color 0.2s,color 0.2s}
-.btn-ghost:hover{border-color:#3A6B44!important;color:#7FDB93!important}
-.btn-a{transition:box-shadow 0.2s,border-color 0.2s}
-.btn-a:hover{box-shadow:0 0 10px #FFB30030!important;border-color:#FFB30055!important}
+.btn-premium{
+  position:relative;overflow:hidden;
+  transition:box-shadow 0.25s ease,transform 0.15s ease,filter 0.25s ease;
+}
+.btn-g{transition:box-shadow 0.25s ease,transform 0.15s ease,filter 0.25s ease}
+.btn-g:hover{box-shadow:0 0 22px #39FF6A66,0 4px 12px #00000066!important;transform:translateY(-2px);filter:brightness(1.1)}
+.btn-r{transition:box-shadow 0.25s ease,transform 0.15s ease,filter 0.25s ease}
+.btn-r:hover{box-shadow:0 0 22px #FF3B3B66,0 4px 12px #00000066!important;transform:translateY(-2px);filter:brightness(1.1)}
+.btn-ghost{transition:border-color 0.2s,color 0.2s,background 0.2s}
+.btn-ghost:hover{border-color:#39FF6A!important;color:#B6FFC2!important;background:#39FF6A0F!important}
+.btn-a{transition:box-shadow 0.2s,border-color 0.2s,background 0.2s}
+.btn-a:hover{box-shadow:0 0 14px #FFB30040!important;border-color:#FFB300!important;background:#FFB3000F!important}
 
 .countdown-num{
   transition:all 0.3s ease;
   display:inline-block
+}
+
+.brand-mark{
+  animation:borderPulse 2.5s ease-in-out infinite;
+}
+
+.kpi-strip{
+  display:flex;gap:10px;
+}
+.kpi-tile{
+  flex:1;background:linear-gradient(165deg,#0A160BEE,#071009EE);
+  border:1px solid #1E4527;border-radius:8px;padding:10px 12px;
+  position:relative;overflow:hidden;
+}
+.kpi-tile::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg, transparent, #39FF6A, transparent);
+  opacity:0.6;
 }
 </style>
 </head>
@@ -345,60 +417,85 @@ BG='#050B06';CARD='#081208';CARD2='#0A160B';BRDR='#1E4527'
 BLUE='#00FFC2';GREEN='#39FF6A';AMBER='#FFB300';RED='#FF3B3B'
 DIM='#3A6B44';WHITE='#B6FFC2';MONO='"IBM Plex Mono",monospace'
 
-def lbl(text,color,size='9px',spacing='1.5px',mb='7px'):
-    return html.Div(text,style={
-        'color':color,'fontFamily':MONO,'fontSize':size,
-        'letterSpacing':spacing,'marginBottom':mb,'fontWeight':'700'
-    })
+def lbl(text,color,size='9px',spacing='1.5px',mb='9px'):
+    """Card header label with a small glowing accent dot -- the dot color
+    doubles as a quick visual index of which subsystem a panel belongs to
+    (blue/teal=info, amber=warning-tier, green=response, red=critical)."""
+    return html.Div([
+        html.Span(className='dot',style={'background':color,'color':color}),
+        html.Span(text,style={
+            'color':color,'fontFamily':MONO,'fontSize':size,
+            'letterSpacing':spacing,'fontWeight':'700'
+        }),
+    ],className='card-head',style={'marginBottom':mb})
 
-def card(children,border=None,mb='8px',pad='12px'):
-    return html.Div(children,className='hz',style={
-        'background':CARD,'border':f'1px solid {border or BRDR}',
-        'borderRadius':'6px','padding':pad,'marginBottom':mb
+def card(children,border=None,mb='10px',pad='14px'):
+    return html.Div(children,className='hz card-panel',style={
+        'borderColor':border or BRDR,
+        'padding':pad,'marginBottom':mb
     })
 
 app.layout = html.Div([
 
+    html.Div(className='scanline-overlay'),
+
     html.Div([
         html.Div([
-            html.Span('◈ ',style={'color':BLUE,'fontSize':'19px','verticalAlign':'middle'}),
-            html.Span('PABD  THREAT  INTELLIGENCE  CENTER',style={
-                'color':WHITE,'fontFamily':MONO,'fontSize':'13px',
-                'fontWeight':'700','letterSpacing':'4px','verticalAlign':'middle'
+            html.Span('◈',className='brand-mark',style={
+                'color':GREEN,'fontSize':'22px','verticalAlign':'middle',
+                'marginRight':'10px','textShadow':f'0 0 12px {GREEN}88'
             }),
-            html.Span('  ·  LIVE',className='live-dot',style={
-                'color':GREEN,'fontFamily':MONO,'fontSize':'10px','marginLeft':'12px','letterSpacing':'2px'
+            html.Div([
+                html.Div('PABD',style={
+                    'color':WHITE,'fontFamily':MONO,'fontSize':'15px',
+                    'fontWeight':'700','letterSpacing':'5px','lineHeight':'1.1',
+                    'textShadow':f'0 0 18px {GREEN}44'
+                }),
+                html.Div('THREAT INTELLIGENCE CENTER',style={
+                    'color':DIM,'fontFamily':MONO,'fontSize':'8px',
+                    'letterSpacing':'2.5px','lineHeight':'1.1','marginTop':'2px'
+                }),
+            ]),
+            html.Div(style={'width':'1px','height':'26px','background':BRDR,'margin':'0 18px'}),
+            html.Span('●  LIVE',className='live-dot',style={
+                'color':GREEN,'fontFamily':MONO,'fontSize':'9.5px','letterSpacing':'2px',
+                'background':f'{GREEN}14','padding':'4px 10px','borderRadius':'20px',
+                'border':f'1px solid {GREEN}33'
             }),
-            html.Span(id='hdr',style={'color':DIM,'fontFamily':MONO,'fontSize':'10px','marginLeft':'22px'}),
+            html.Span(id='hdr',style={'color':DIM,'fontFamily':MONO,'fontSize':'9.5px','marginLeft':'16px'}),
         ],style={'display':'flex','alignItems':'center'}),
         html.Div([
             html.Button('▶  NORMAL MODE',id='btn-normal',className='btn-g',style={
-                'background':GREEN,'border':'none','color':'#000','fontFamily':MONO,
-                'fontSize':'10px','fontWeight':'700','padding':'8px 15px',
-                'borderRadius':'4px','marginRight':'6px','cursor':'pointer','letterSpacing':'1px'
+                'background':f'linear-gradient(135deg,{GREEN},#28D157)','border':'none','color':'#04140A','fontFamily':MONO,
+                'fontSize':'10px','fontWeight':'700','padding':'9px 16px',
+                'borderRadius':'10px','marginRight':'7px','cursor':'pointer','letterSpacing':'1px',
+                'boxShadow':f'0 2px 10px {GREEN}33'
             }),
             html.Button('⚡  SIMULATE ATTACK',id='btn-attack',className='btn-r',style={
-                'background':RED,'border':'none','color':'#fff','fontFamily':MONO,
-                'fontSize':'10px','fontWeight':'700','padding':'8px 15px',
-                'borderRadius':'4px','marginRight':'6px','cursor':'pointer','letterSpacing':'1px'
+                'background':f'linear-gradient(135deg,{RED},#C41E1E)','border':'none','color':'#fff','fontFamily':MONO,
+                'fontSize':'10px','fontWeight':'700','padding':'9px 16px',
+                'borderRadius':'10px','marginRight':'7px','cursor':'pointer','letterSpacing':'1px',
+                'boxShadow':f'0 2px 10px {RED}33'
             }),
             html.Button('↺  RESET',id='btn-reset',className='btn-ghost',style={
                 'background':'transparent','border':f'1px solid {BRDR}','color':DIM,
-                'fontFamily':MONO,'fontSize':'10px','padding':'8px 13px',
-                'borderRadius':'4px','marginRight':'6px','cursor':'pointer'
+                'fontFamily':MONO,'fontSize':'10px','padding':'9px 14px',
+                'borderRadius':'10px','marginRight':'7px','cursor':'pointer'
             }),
             html.Button('⚖  IDS COMPARE',id='btn-compare',className='btn-a',style={
-                'background':'transparent','border':'1px solid #FFB30030','color':AMBER,
-                'fontFamily':MONO,'fontSize':'10px','padding':'8px 13px',
-                'borderRadius':'4px','cursor':'pointer'
+                'background':'transparent','border':f'1px solid {AMBER}30','color':AMBER,
+                'fontFamily':MONO,'fontSize':'10px','padding':'9px 14px',
+                'borderRadius':'10px','cursor':'pointer'
             }),
         ],style={'display':'flex','alignItems':'center'}),
     ],style={
-        'background':f'linear-gradient(90deg,{BG},{CARD})','padding':'10px 20px',
+        'background':f'linear-gradient(90deg,{BG},{CARD} 60%,{BG})','padding':'12px 22px',
         'display':'flex','justifyContent':'space-between','alignItems':'center',
         'borderBottom':f'1px solid {BRDR}','position':'sticky','top':'0','zIndex':'999',
-        'width':'100%'
+        'width':'100%','boxShadow':'0 4px 20px #00000066'
     }),
+
+    html.Div(id='kpi-strip',style={'padding':'10px 20px 0'}),
 
     html.Div([
 
@@ -507,7 +604,7 @@ def buttons(n1,n2,n3,n4):
      Output('killchain-box','children'),
      Output('timeline','children'),
      Output('compare-box','children'),Output('hdr','children'),
-     Output('event-log','children')],
+     Output('event-log','children'),Output('kpi-strip','children')],
     Input('tick','n_intervals'))
 def update(n):
     if S['running']:sim_step()
@@ -647,7 +744,7 @@ def update(n):
             }),
         ],className='glow-red hz',style={
             'background':'rgba(255,61,87,0.06)','border':f'1px solid {RED}44',
-            'borderRadius':'6px','padding':'8px'
+            'borderRadius':'10px','padding':'8px'
         })
     else:
         rv=S['rec_score']
@@ -656,7 +753,7 @@ def update(n):
             html.Div(f'● {st}',style={'color':sc,'fontFamily':MONO,'fontSize':'20px','fontWeight':'700','textAlign':'center','padding':'8px 0 4px'}),
             html.Div(f'Risk Score  {rv:.4f}',style={'color':DIM,'fontFamily':MONO,'fontSize':'10px','textAlign':'center'}),
             html.Div(f'Metrics drifting: {S["metrics_breached"]} / 6',style={'color':DIM,'fontFamily':MONO,'fontSize':'9px','textAlign':'center','marginTop':'3px'}),
-        ],className='hz',style={'border':f'1px solid {sc}33','borderRadius':'6px','padding':'8px','background':f'{sc}08'})
+        ],className='hz',style={'border':f'1px solid {sc}33','borderRadius':'10px','padding':'8px','background':f'{sc}08'})
 
     if S['attack_classified'] and S['predicted_attack']:
         fi=sorted(S['feature_imp'].items(),key=lambda x:x[1],reverse=True)[:3]
@@ -675,11 +772,11 @@ def update(n):
                 html.Div(style={'width':f'{imp*100:.0f}%','height':'4px','background':f'linear-gradient(90deg,{BLUE},{GREEN})','borderRadius':'2px','marginBottom':'2px'}),
                 html.Div(f'{feat}  {imp*100:.1f}%',style={'color':WHITE,'fontFamily':MONO,'fontSize':'9.5px','marginBottom':'5px'}),
             ]) for feat,imp in fi]
-        ],className='hz',style={'background':'rgba(255,61,87,0.04)','border':f'1px solid {RED}33','borderRadius':'6px','padding':'12px'})
+        ],className='hz',style={'background':'rgba(255,61,87,0.04)','border':f'1px solid {RED}33','borderRadius':'10px','padding':'12px'})
     else:
         threat_box=html.Div('Awaiting classification...',style={
             'color':BRDR,'fontFamily':MONO,'fontSize':'10px','textAlign':'center',
-            'padding':'18px','border':f'1px solid {BRDR}','borderRadius':'6px'
+            'padding':'18px','border':f'1px solid {BRDR}','borderRadius':'10px'
         })
 
     if S['countdown'] > 0:
@@ -721,7 +818,7 @@ def update(n):
                 'transition':'width 0.65s linear, background 0.5s ease'
             }),
             html.Div(f'95% CI: {mlo:02d}:{slo:02d} — {mhi:02d}:{shi:02d}',style={'color':AMBER,'fontFamily':MONO,'fontSize':'9.5px','textAlign':'center'}),
-        ],className='hz',style={'background':'rgba(255,61,87,0.04)','border':f'1px solid {RED}33','borderRadius':'6px','padding':'12px'})
+        ],className='hz',style={'background':'rgba(255,61,87,0.04)','border':f'1px solid {RED}33','borderRadius':'10px','padding':'12px'})
     else:
         timer_box=html.Div()
 
@@ -744,7 +841,7 @@ def update(n):
     gauges_box=html.Div([
         html.Div('CUSUM METRIC LEVELS',style={'color':DIM,'fontFamily':MONO,'fontSize':'9px','letterSpacing':'1.5px','marginBottom':'8px','fontWeight':'700'}),
         *gauges
-    ],className='hz',style={'background':CARD,'border':f'1px solid {BRDR}','borderRadius':'6px','padding':'12px'})
+    ],className='hz',style={'background':CARD,'border':f'1px solid {BRDR}','borderRadius':'10px','padding':'12px'})
 
     if S['attack_classified'] and S['predicted_attack'] in PROFILES:
         prof=PROFILES[S['predicted_attack']]
@@ -756,7 +853,7 @@ def update(n):
             ],style={'marginBottom':'4px'}) for k,v in prof.items()],
             html.Div('Evasion Attempt:  DETECTED',style={'color':'#FF7A1A','fontFamily':MONO,'fontSize':'9.5px','marginTop':'8px'}),
             html.Div('System Response:  ACTIVE',style={'color':GREEN,'fontFamily':MONO,'fontSize':'9.5px','marginTop':'3px'}),
-        ],className='hz',style={'background':'rgba(179,136,255,0.04)','border':'1px solid #B388FF33','borderRadius':'6px','padding':'12px'})
+        ],className='hz',style={'background':'rgba(179,136,255,0.04)','border':'1px solid #B388FF33','borderRadius':'10px','padding':'12px'})
     else:
         profile_box=html.Div()
 
@@ -778,7 +875,7 @@ def update(n):
             html.Div('Per-alert explanation for this window -- not a static global ranking.',
                      style={'color':DIM,'fontFamily':MONO,'fontSize':'7.5px','textAlign':'center','marginBottom':'8px'}),
             *[_bar(feat, val, raw) for feat, val, raw in S['shap_explain'][:6]],
-        ],className='hz',style={'background':'rgba(0,230,118,0.04)','border':'1px solid #39FF6A33','borderRadius':'6px','padding':'12px'})
+        ],className='hz',style={'background':'rgba(0,230,118,0.04)','border':'1px solid #39FF6A33','borderRadius':'10px','padding':'12px'})
     else:
         shap_box=html.Div()
 
@@ -806,7 +903,7 @@ def update(n):
                 }) for i,stage in enumerate(KILL_CHAIN)
             ],style={'display':'flex'}),
         ]),
-    ],className='hz',style={'background':'rgba(255,179,0,0.04)','border':f'1px solid {AMBER}33','borderRadius':'6px','padding':'12px','marginTop':'8px'})
+    ],className='hz',style={'background':'rgba(255,179,0,0.04)','border':f'1px solid {AMBER}33','borderRadius':'10px','padding':'12px','marginTop':'8px'})
 
     tl_steps=[
         (0.0,'T-23 min','Baseline monitoring active'),
@@ -838,19 +935,19 @@ def update(n):
                     html.Div(f"Status:  {'FIRED' if S['pabd_fired'] else 'Monitoring'}",style={'color':GREEN if S['pabd_fired'] else DIM,'fontFamily':MONO,'fontSize':'9.5px'}),
                     html.Div(f"Step:  {S['pabd_step'] if S['pabd_fired'] else '--'}",style={'color':DIM,'fontFamily':MONO,'fontSize':'9px','marginTop':'3px'}),
                     html.Div('Detects:  PRE-ATTACK PHASE',style={'color':DIM,'fontFamily':MONO,'fontSize':'9px','marginTop':'3px'}),
-                ],style={'flex':1,'padding':'10px','border':f'1px solid {GREEN}33','borderRadius':'4px','marginRight':'6px','background':f'{GREEN}06'}),
+                ],style={'flex':1,'padding':'10px','border':f'1px solid {GREEN}33','borderRadius':'6px','marginRight':'6px','background':f'{GREEN}06'}),
                 html.Div([
                     html.Div('TRADITIONAL IDS',style={'color':'#FF7A1A','fontFamily':MONO,'fontSize':'9px','fontWeight':'700','marginBottom':'5px'}),
                     html.Div(f"Status:  {'FIRED' if S['trad_fired'] else 'No alert'}",style={'color':'#FF7A1A' if S['trad_fired'] else DIM,'fontFamily':MONO,'fontSize':'9.5px'}),
                     html.Div(f"Step:  {S['trad_step'] if S['trad_fired'] else '--'}",style={'color':DIM,'fontFamily':MONO,'fontSize':'9px','marginTop':'3px'}),
                     html.Div('Detects:  EXECUTION PHASE',style={'color':DIM,'fontFamily':MONO,'fontSize':'9px','marginTop':'3px'}),
-                ],style={'flex':1,'padding':'10px','border':'1px solid #FF7A1A33','borderRadius':'4px','background':'#FF7A1A06'}),
+                ],style={'flex':1,'padding':'10px','border':'1px solid #FF7A1A33','borderRadius':'6px','background':'#FF7A1A06'}),
             ],style={'display':'flex','marginBottom':'8px'}),
             html.Div(
                 f'Lead time advantage:  {adv} steps earlier' if adv else 'Traditional IDS has not fired yet.',
                 style={'color':AMBER,'fontFamily':MONO,'fontSize':'9.5px','textAlign':'center','padding':'4px 0'}
             ),
-        ],className='hz',style={'background':CARD,'border':f'1px solid {AMBER}33','borderRadius':'6px','padding':'12px','marginTop':'8px'})
+        ],className='hz',style={'background':CARD,'border':f'1px solid {AMBER}33','borderRadius':'10px','padding':'12px','marginTop':'8px'})
     else:
         compare_box=html.Div()
 
@@ -863,9 +960,24 @@ def update(n):
     pct=(fp/tp*100) if tp>0 else 0
     hdr=f'Packets: {tp}  ·  Flagged: {fp} ({pct:.1f}%)  ·  {S["pps"]} pkt/s  ·  Step: {S["step"]}'
 
+    def kpi_tile(label, value, color, sub=None):
+        return html.Div([
+            html.Div(label,style={'color':DIM,'fontFamily':MONO,'fontSize':'8px','letterSpacing':'1.5px','marginBottom':'5px'}),
+            html.Div(value,style={'color':color,'fontFamily':MONO,'fontSize':'19px','fontWeight':'700','lineHeight':'1'}),
+            html.Div(sub or ' ',style={'color':DIM,'fontFamily':MONO,'fontSize':'8px','marginTop':'4px'}),
+        ],className='kpi-tile')
+
+    risk_color = GREEN if S['rec_score']<0.3 else AMBER if S['rec_score']<0.6 else '#FF7A1A' if S['rec_score']<0.85 else RED
+    kpi_strip = html.Div([
+        kpi_tile('PACKETS PROCESSED', f'{tp:,}', WHITE, f'{S["pps"]} pkt/s'),
+        kpi_tile('FLAGGED ANOMALOUS', f'{fp:,}', AMBER, f'{pct:.1f}% of traffic'),
+        kpi_tile('RISK SCORE', f'{S["rec_score"]:.3f}', risk_color, f'{S["metrics_breached"]}/6 metrics drifting'),
+        kpi_tile('SESSION STEP', f'{S["step"]}', BLUE, 'PABD FIRED' if S['pabd_fired'] else 'monitoring'),
+    ],className='kpi-strip')
+
     return (net_items,anom_items,cusum_fig,rec_fig,net_graph_fig,
             status_box,threat_box,timer_box,gauges_box,
-            profile_box,shap_box,killchain_box,tl_items,compare_box,hdr,log_items)
+            profile_box,shap_box,killchain_box,tl_items,compare_box,hdr,log_items,kpi_strip)
 
 
 if __name__=='__main__':
