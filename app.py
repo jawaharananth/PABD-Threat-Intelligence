@@ -405,6 +405,12 @@ html,body{
   background:linear-gradient(90deg, transparent, #39FF6A, transparent);
   opacity:0.6;
 }
+
+.zone-col{min-width:0;display:flex;flex-direction:column}
+
+@media (max-width: 1100px){
+  .zone-col{grid-column:span 1}
+}
 </style>
 </head>
 <body>
@@ -434,6 +440,19 @@ def card(children,border=None,mb='10px',pad='14px'):
         'borderColor':border or BRDR,
         'padding':pad,'marginBottom':mb
     })
+
+def zone_title(text,color):
+    """Section divider above a group of related cards -- gives the new
+    grid-based layout named zones (Signal Analysis, Network Visibility,
+    Detection Intelligence, Operations Log) instead of an unlabeled column."""
+    return html.Div([
+        html.Div(style={'width':'14px','height':'1px','background':color}),
+        html.Div(text,style={
+            'color':color,'fontFamily':MONO,'fontSize':'9.5px','fontWeight':'700',
+            'letterSpacing':'3px','margin':'0 10px'
+        }),
+        html.Div(style={'flex':'1','height':'1px','background':f'linear-gradient(90deg,{color}55,transparent)'}),
+    ],style={'display':'flex','alignItems':'center','marginBottom':'12px','marginTop':'2px'})
 
 app.layout = html.Div([
 
@@ -495,11 +514,38 @@ app.layout = html.Div([
         'width':'100%','boxShadow':'0 4px 20px #00000066'
     }),
 
-    html.Div(id='kpi-strip',style={'padding':'10px 20px 0'}),
+    html.Div(id='kpi-strip',style={'padding':'12px 20px 0'}),
 
+    # -- HERO ROW: the single "what is happening right now" strip. Status,
+    # countdown and threat classification used to be buried in a narrow
+    # right-hand column; they're the most important thing on screen and now
+    # get equal top billing as three wide cards. --
+    html.Div([
+        html.Div(id='status-box',style={'flex':'1','minWidth':'0'}),
+        html.Div(id='timer-box',style={'flex':'1','minWidth':'0'}),
+        html.Div(id='threat-box',style={'flex':'1','minWidth':'0'}),
+    ],style={'display':'flex','gap':'12px','padding':'12px 20px 0'}),
+
+    # -- MAIN ZONE GRID: three thematic columns instead of an arbitrary
+    # feed/chart/sidebar split -- Signals (raw drift), Network (what's on
+    # the wire), Detection (what it means). --
     html.Div([
 
         html.Div([
+            zone_title('SIGNAL ANALYSIS',BLUE),
+            card([
+                lbl('CUSUM DRIFT MONITORS  ·  6 SIMULTANEOUS BEHAVIOURAL METRICS',BLUE),
+                dcc.Graph(id='cusum-fig',style={'height':'205px'},config={'displayModeBar':False}),
+            ]),
+            card([
+                lbl('RISK ESCALATION CURVE  ·  NORMAL — ELEVATED — WARNING — CRITICAL',AMBER),
+                dcc.Graph(id='rec-fig',style={'height':'145px'},config={'displayModeBar':False}),
+            ]),
+            html.Div(id='gauges-box'),
+        ],className='zone-col'),
+
+        html.Div([
+            zone_title('NETWORK VISIBILITY',BLUE),
             card([
                 lbl('LIVE NETWORK TRAFFIC FEED',BLUE),
                 html.Div(id='net-feed',style={'height':'175px','overflowY':'auto','fontFamily':MONO,'fontSize':'9px'})
@@ -508,47 +554,41 @@ app.layout = html.Div([
                 lbl('LIVE NETWORK GRAPH  ·  EXTERNAL -> INTERNAL',BLUE),
                 dcc.Graph(id='net-graph-fig',style={'height':'180px'},config={'displayModeBar':False}),
             ]),
+        ],className='zone-col'),
+
+        html.Div([
+            zone_title('DETECTION INTELLIGENCE',RED),
+            html.Div(id='killchain-box',style={'marginBottom':'10px'}),
+            html.Div(id='profile-box',style={'marginBottom':'10px'}),
+            html.Div(id='shap-box'),
+        ],className='zone-col'),
+
+    ],style={
+        'display':'grid','gridTemplateColumns':'1fr 1fr 1.1fr','gap':'14px',
+        'padding':'14px 20px','background':BG,'width':'100%'
+    }),
+
+    # -- OPERATIONS FOOTER: logging/comparison panels, lower on the page
+    # since they're supporting evidence, not the primary "what's happening"
+    # signal the hero row and main zones already cover. --
+    html.Div([
+        zone_title('OPERATIONS LOG',DIM),
+        html.Div([
             card([
                 lbl('ISOLATION FOREST  ·  ANOMALY STREAM',AMBER),
                 html.Div(id='anom-feed',style={'height':'110px','overflowY':'auto','fontFamily':MONO,'fontSize':'9px','color':AMBER})
-            ],border='#FFB30022'),
+            ],border=f'{AMBER}22',mb='0'),
             card([
                 lbl('SOC RESPONSE TIMELINE',GREEN),
-                html.Div(id='timeline',style={'fontFamily':MONO,'fontSize':'9.5px'})
-            ],border='#39FF6A22'),
+                html.Div(id='timeline',style={'fontFamily':MONO,'fontSize':'9.5px','height':'110px','overflowY':'auto'})
+            ],border=f'{GREEN}22',mb='0'),
             card([
                 lbl('SESSION EVENT LOG',DIM),
-                html.Div(id='event-log',style={'height':'95px','overflowY':'auto','fontFamily':MONO,'fontSize':'8.5px'})
-            ]),
-        ],style={'width':'23%','padding':'8px 5px 8px 8px','flexShrink':'0'}),
-
-        html.Div([
-            card([
-                lbl('CUSUM DRIFT MONITORS  ·  6 SIMULTANEOUS BEHAVIOURAL METRICS',BLUE),
-                dcc.Graph(id='cusum-fig',style={'height':'210px'},config={'displayModeBar':False}),
-            ]),
-            card([
-                lbl('RISK ESCALATION CURVE  ·  NORMAL — ELEVATED — WARNING — CRITICAL',AMBER),
-                dcc.Graph(id='rec-fig',style={'height':'155px'},config={'displayModeBar':False}),
-            ]),
+                html.Div(id='event-log',style={'height':'110px','overflowY':'auto','fontFamily':MONO,'fontSize':'8.5px'})
+            ],mb='0'),
             html.Div(id='compare-box'),
-        ],style={'flex':'1','padding':'8px 5px','minWidth':'0'}),
-
-        html.Div([
-            html.Div(id='status-box',style={'marginBottom':'8px'}),
-            html.Div(id='threat-box',style={'marginBottom':'8px'}),
-            html.Div(id='timer-box',style={'marginBottom':'8px'}),
-            html.Div(id='gauges-box',style={'marginBottom':'8px'}),
-            html.Div(id='profile-box',style={'marginBottom':'8px'}),
-            html.Div(id='shap-box',style={'marginBottom':'8px'}),
-            html.Div(id='killchain-box'),
-        ],style={'width':'28%','padding':'8px 8px 8px 5px','flexShrink':'0'}),
-
-    ],style={
-        'display':'flex','background':BG,
-        'minHeight':'calc(100vh - 50px)',
-        'width':'100%','overflow':'hidden'
-    }),
+        ],style={'display':'grid','gridTemplateColumns':'1fr 1fr 1fr 1fr','gap':'14px'}),
+    ],style={'padding':'0 20px 20px'}),
 
     dcc.Store(id='store'),
     dcc.Interval(id='tick',interval=650,n_intervals=0),
