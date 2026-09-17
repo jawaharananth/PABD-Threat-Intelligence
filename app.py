@@ -84,35 +84,37 @@ S = {
 def gen_normal():
     return {f:float(np.clip(np.random.normal(MEANS[f],STDS[f]*0.4),MEANS[f]-2*STDS[f],MEANS[f]+2*STDS[f])) for f in FEATURES}
 
+# Attack profiles expressed as target z-shifts (in units of the real
+# CICIDS baseline std) per feature at full intensity. Absolute deltas broke
+# once baseline_stats came from real data: connection_frequency has a std of
+# ~1000 there, so "+22 connections" was a 0.02-sigma nudge and CUSUM never
+# fired in the demo. Working in sigma units keeps the simulation meaningful
+# regardless of the baseline's scale.
+ATTACK_Z = {
+    'Reconnaissance':{'connection_frequency':3.5,'port_entropy':3.0,'failed_auth_rate':1.0,
+                      'packet_size_dist':-2.5,'protocol_ratio':-2.0,'burst_activity':3.0},
+    'Brute Force':   {'connection_frequency':2.5,'port_entropy':0.5,'failed_auth_rate':4.0,
+                      'packet_size_dist':-2.0,'protocol_ratio':-1.5,'burst_activity':3.0},
+    'Lateral Movement':{'connection_frequency':1.5,'port_entropy':2.0,'failed_auth_rate':2.5,
+                      'packet_size_dist':2.5,'protocol_ratio':-3.0,'burst_activity':2.0},
+    'DoS':           {'connection_frequency':4.5,'port_entropy':-1.0,'failed_auth_rate':0.2,
+                      'packet_size_dist':-3.0,'protocol_ratio':-1.0,'burst_activity':4.0},
+    'Bot':           {'connection_frequency':1.0,'port_entropy':1.5,'failed_auth_rate':0.5,
+                      'packet_size_dist':-1.0,'protocol_ratio':-2.5,'burst_activity':2.5},
+}
+FEATURE_BOUNDS = {'port_entropy':(0,None),'failed_auth_rate':(0,1),'protocol_ratio':(0,1),
+                  'connection_frequency':(1,None),'packet_size_dist':(40,1500),'burst_activity':(0,None)}
+
 def gen_attack(atype,p):
-    profiles = {
-        'Reconnaissance':{
-            'connection_frequency':MEANS['connection_frequency']+p*22,
-            'port_entropy':min(MEANS['port_entropy']+p*0.58,0.99),
-            'failed_auth_rate':min(MEANS['failed_auth_rate']+p*0.14,0.99),
-            'packet_size_dist':max(MEANS['packet_size_dist']-p*220,65),
-            'protocol_ratio':max(MEANS['protocol_ratio']-p*0.38,0.01),
-            'burst_activity':min(MEANS['burst_activity']+p*0.65,0.99),
-        },
-        'Brute Force':{
-            'connection_frequency':MEANS['connection_frequency']+p*14,
-            'port_entropy':min(MEANS['port_entropy']+p*0.12,0.99),
-            'failed_auth_rate':min(MEANS['failed_auth_rate']+p*0.72,0.99),
-            'packet_size_dist':max(MEANS['packet_size_dist']-p*160,65),
-            'protocol_ratio':max(MEANS['protocol_ratio']-p*0.22,0.01),
-            'burst_activity':min(MEANS['burst_activity']+p*0.75,0.99),
-        },
-        'Lateral Movement':{
-            'connection_frequency':MEANS['connection_frequency']+p*8,
-            'port_entropy':min(MEANS['port_entropy']+p*0.27,0.99),
-            'failed_auth_rate':min(MEANS['failed_auth_rate']+p*0.25,0.99),
-            'packet_size_dist':MEANS['packet_size_dist']+p*220,
-            'protocol_ratio':max(MEANS['protocol_ratio']-p*0.52,0.01),
-            'burst_activity':min(MEANS['burst_activity']+p*0.45,0.99),
-        },
-    }
-    base = profiles.get(atype,profiles['Reconnaissance'])
-    return {f:float(base[f]+np.random.normal(0,STDS[f]*0.10)) for f in FEATURES}
+    z = ATTACK_Z.get(atype, ATTACK_Z['Reconnaissance'])
+    out = {}
+    for f in FEATURES:
+        v = MEANS[f] + p*z[f]*STDS[f] + np.random.normal(0,STDS[f]*0.15)
+        lo,hi = FEATURE_BOUNDS[f]
+        if lo is not None: v = max(lo,v)
+        if hi is not None: v = min(hi,v)
+        out[f] = float(v)
+    return out
 
 def log_event(msg):
     ts = time.strftime('%H:%M:%S')
@@ -134,10 +136,10 @@ def sim_step():
         S['pps_counter'] = 0
         S['last_packet_time'] = now
 
-    p = min((S['step']-1)/60,1.0) if S['attack_mode'] else 0
+    p = min((S['step']-1)/40,1.0) if S['attack_mode'] else 0
     metrics = gen_attack(S['attack_type'],p) if S['attack_mode'] else gen_normal()
 
-    X = np.array([[metrics[f] for f in FEATURES]])
+    X = pd.DataFrame([metrics],columns=FEATURES)
     ascore = float(-iso_forest.score_samples(X)[0])
     is_anom = ascore > 0.52
     if is_anom:
@@ -472,34 +474,28 @@ app.layout = html.Div([
 
     html.Div(id='kpi-strip',style={'padding':'20px 28px 0'}),
 
-    # -- HERO ROW: the single "what is happening right now" strip. Status,
-    # countdown and threat classification used to be buried in a narrow
-    # right-hand column; they're the most important thing on screen and now
-    # get equal top billing as three wide cards. --
+    # -- PRIMARY CHARTS: the two live analytics views get top billing,
+    # full width, directly under the KPI strip. --
+    html.Div([
+        card([
+            lbl('CUSUM DRIFT MONITORS  ·  6 SIMULTANEOUS BEHAVIOURAL METRICS',BLUE),
+            dcc.Graph(id='cusum-fig',style={'height':'300px'},config={'displayModeBar':False}),
+        ],mb='0'),
+        card([
+            lbl('RISK ESCALATION CURVE  ·  NORMAL — ELEVATED — WARNING — CRITICAL',AMBER),
+            dcc.Graph(id='rec-fig',style={'height':'300px'},config={'displayModeBar':False}),
+        ],mb='0'),
+    ],style={'display':'grid','gridTemplateColumns':'1.35fr 1fr','gap':'16px','padding':'16px 28px 0'}),
+
+    # -- HERO ROW: current status / countdown / classification --
     html.Div([
         html.Div(id='status-box',style={'flex':'1','minWidth':'0'}),
         html.Div(id='timer-box',style={'flex':'1','minWidth':'0'}),
         html.Div(id='threat-box',style={'flex':'1','minWidth':'0'}),
     ],style={'display':'flex','gap':'16px','padding':'16px 28px 0'}),
 
-    # -- MAIN ZONE GRID: three thematic columns instead of an arbitrary
-    # feed/chart/sidebar split -- Signals (raw drift), Network (what's on
-    # the wire), Detection (what it means). --
+    # -- DETAIL ZONES --
     html.Div([
-
-        html.Div([
-            zone_title('SIGNAL ANALYSIS',BLUE),
-            card([
-                lbl('CUSUM DRIFT MONITORS  ·  6 SIMULTANEOUS BEHAVIOURAL METRICS',BLUE),
-                dcc.Graph(id='cusum-fig',style={'height':'205px'},config={'displayModeBar':False}),
-            ]),
-            card([
-                lbl('RISK ESCALATION CURVE  ·  NORMAL — ELEVATED — WARNING — CRITICAL',AMBER),
-                dcc.Graph(id='rec-fig',style={'height':'145px'},config={'displayModeBar':False}),
-            ]),
-            html.Div(id='gauges-box'),
-        ],className='zone-col'),
-
         html.Div([
             zone_title('NETWORK VISIBILITY',BLUE),
             card([
@@ -514,36 +510,38 @@ app.layout = html.Div([
 
         html.Div([
             zone_title('DETECTION INTELLIGENCE',RED),
-            html.Div(id='killchain-box',style={'marginBottom':'10px'}),
-            html.Div(id='profile-box',style={'marginBottom':'10px'}),
+            html.Div(id='killchain-box',style={'marginBottom':'16px'}),
+            html.Div(id='profile-box',style={'marginBottom':'16px'}),
             html.Div(id='shap-box'),
         ],className='zone-col'),
 
+        html.Div([
+            zone_title('SIGNAL DETAIL',GREEN),
+            html.Div(id='gauges-box',style={'marginBottom':'16px'}),
+            card([
+                lbl('ISOLATION FOREST  ·  ANOMALY STREAM',AMBER),
+                html.Div(id='anom-feed',style={'height':'120px','overflowY':'auto'})
+            ],border=f'{AMBER}44'),
+        ],className='zone-col'),
     ],style={
-        'display':'grid','gridTemplateColumns':'1fr 1fr 1.1fr','gap':'16px',
+        'display':'grid','gridTemplateColumns':'1fr 1.1fr 1fr','gap':'16px',
         'padding':'16px 28px','background':BG,'width':'100%'
     }),
 
-    # -- OPERATIONS FOOTER: logging/comparison panels, lower on the page
-    # since they're supporting evidence, not the primary "what's happening"
-    # signal the hero row and main zones already cover. --
+    # -- OPERATIONS --
     html.Div([
         zone_title('OPERATIONS LOG',DIM),
         html.Div([
             card([
-                lbl('ISOLATION FOREST  ·  ANOMALY STREAM',AMBER),
-                html.Div(id='anom-feed',style={'height':'120px','overflowY':'auto'})
-            ],border=f'{AMBER}22',mb='0'),
-            card([
                 lbl('SOC RESPONSE TIMELINE',GREEN),
                 html.Div(id='timeline',style={'height':'120px','overflowY':'auto'})
-            ],border=f'{GREEN}22',mb='0'),
+            ],border=f'{GREEN}44',mb='0'),
             card([
                 lbl('SESSION EVENT LOG',DIM),
                 html.Div(id='event-log',style={'height':'120px','overflowY':'auto'})
             ],mb='0'),
             html.Div(id='compare-box'),
-        ],style={'display':'grid','gridTemplateColumns':'1fr 1fr 1fr 1fr','gap':'16px'}),
+        ],style={'display':'grid','gridTemplateColumns':'1fr 1fr 1fr','gap':'16px'}),
     ],style={'padding':'0 28px 28px'}),
 
     dcc.Store(id='store'),
@@ -580,7 +578,7 @@ def buttons(n1,n2,n3,n4):
         log_event('Session started -- normal traffic')
     elif btn=='btn-attack':
         reset()
-        at=random.choice(['Reconnaissance','Brute Force','Lateral Movement'])
+        at=random.choice(['Reconnaissance','Brute Force','Lateral Movement','DoS','Bot'])
         S.update({'running':True,'attack_mode':True,'attack_type':at,'sequence':list(range(60))})
         log_event(f'Attack simulation: {at}')
     elif btn=='btn-reset':
