@@ -533,7 +533,7 @@ app.layout = html.Div([
         zone_title('OPERATIONS LOG',DIM),
         html.Div([
             card([
-                lbl('SOC RESPONSE TIMELINE',GREEN),
+                lbl('RESPONSE PLAYBOOK  ·  ACTIONS UNLOCKED BY RISK LEVEL',GREEN),
                 html.Div(id='timeline',style={'height':'120px','overflowY':'auto'})
             ],border=f'{GREEN}44',mb='0'),
             card([
@@ -783,8 +783,11 @@ def update(n):
         m = int(total_secs) // 60
         s = int(total_secs) % 60
         ms = int((total_secs - int(total_secs)) * 10)
-        ci_lo = max(total_secs - 90, 0)
-        ci_hi = total_secs + 90
+        # Real held-out MAE of the countdown LSTM (train_lstm_countdown_real.py,
+        # n=50) -- shown as an honest error band, not a fabricated "95% CI".
+        COUNTDOWN_MAE_S = 374
+        ci_lo = max(total_secs - COUNTDOWN_MAE_S, 0)
+        ci_hi = total_secs + COUNTDOWN_MAE_S
         mlo,slo = divmod(int(ci_lo),60)
         mhi,shi = divmod(int(ci_hi),60)
         pct = total_secs / max(S['countdown_max'],1)
@@ -813,7 +816,14 @@ def update(n):
                 'borderRadius':'2px','marginBottom':'6px',
                 'transition':'width 0.65s linear, background 0.5s ease'
             }),
-            html.Div(f'95% CI  {mlo:02d}:{slo:02d} – {mhi:02d}:{shi:02d}',style={'color':DIM,'fontFamily':MONO,'fontSize':'12px'}),
+            html.Div(f'Model MAE ±{COUNTDOWN_MAE_S//60} min  ({mlo:02d}:{slo:02d} – {mhi:02d}:{shi:02d}, n=50 held-out)',style={'color':DIM,'fontFamily':MONO,'fontSize':'12px'}),
+        ],className='card-panel',style={'padding':'18px 20px','height':'100%','borderLeft':f'4px solid {RED}'})
+    elif S['countdown_max']>0:
+        timer_box=html.Div([
+            overline('Estimated time to attack execution'),
+            html.Div([chip('Execution window reached',RED,'rgba(255,92,92,0.12)')],style={'marginBottom':'10px'}),
+            html.Div('Predicted onset time has elapsed. Traditional IDS would typically alert around now.',
+                     style={'color':DIM,'fontFamily':MONO,'fontSize':'12px'}),
         ],className='card-panel',style={'padding':'18px 20px','height':'100%','borderLeft':f'4px solid {RED}'})
     else:
         timer_box=html.Div([
@@ -883,7 +893,7 @@ def update(n):
     # MITRE ATT&CK kill-chain progress bar -- driven by the real tactic
     # mapping in mitre_map.py, not a cosmetic fixed sequence. Highlights up
     # to and including the tactic of the currently classified attack.
-    KILL_CHAIN = ['Discovery','Initial Access','Credential Access','Command and Control','Impact']
+    KILL_CHAIN = ['Discovery','Initial Access','Credential Access','Lateral Movement','Command and Control','Impact']
     if S['attack_classified'] and S['predicted_attack']:
         cur_tactic = mitre_tag(S['predicted_attack'])['tactic']
         cur_idx = KILL_CHAIN.index(cur_tactic) if cur_tactic in KILL_CHAIN else -1
@@ -906,42 +916,45 @@ def update(n):
         ]),
     ],className='hz card-panel',style={'background':'rgba(255,183,77,0.12)','border':f'1px solid {AMBER}44','borderRadius':'10px','padding':'12px','marginTop':'8px'})
 
+    # Recommended-action playbook keyed to the live risk score. These are
+    # suggested SOC actions unlocked at each risk tier -- not events that
+    # have happened (the old version showed fake 'T-23 min' timestamps).
     tl_steps=[
-        (0.0,'T-23 min','Baseline monitoring active'),
-        (0.15,'T-18 min','Log enrichment triggered'),
-        (0.35,'T-12 min','Full packet capture initiated'),
-        (0.55,'T-08 min','SOC analyst notified'),
-        (0.75,'T-04 min','Network containment prepared'),
-        (0.95,'T-00 min','Incident ticket created'),
+        (0.0,'Normal','Baseline monitoring'),
+        (0.15,'Normal','Enrich logs for flagged hosts'),
+        (0.35,'Elevated','Start full packet capture'),
+        (0.55,'Elevated','Notify SOC analyst'),
+        (0.75,'Warning','Prepare network containment'),
+        (0.95,'Critical','Open incident ticket'),
     ]
     rv=S['rec_score']
     tl_items=[]
     for thresh,t,action in tl_steps:
-        if rv>=thresh+0.05: icon,col='v',GREEN
-        elif rv>=thresh: icon,col='!',AMBER
-        else: icon,col='o',BRDR
+        if rv>=thresh+0.05: icon,col='✓',GREEN
+        elif rv>=thresh: icon,col='●',AMBER
+        else: icon,col='○',BRDR
         tl_items.append(html.Div([
             html.Span(f'{icon} ',style={'color':col}),
-            html.Span(f'{t}  ',style={'color':col if col!=BRDR else DIM}),
+            html.Span(f'{t}  ',style={'color':col if col!=BRDR else DIM,'fontSize':'11px','opacity':'0.8'}),
             html.Span(action,style={'color':col if col!=BRDR else '#274A2C'}),
         ],className='tl-row',style={'fontFamily':MONO,'fontSize':'12px'}))
 
     if S.get('comparison_mode'):
         adv=S['trad_step']-S['pabd_step'] if (S['trad_fired'] and S['pabd_fired']) else None
         compare_box=html.Div([
-            html.Div('PABD FRAMEWORK  vs  TRADITIONAL IDS',style={'color':AMBER,'fontFamily':MONO,'fontSize':'12px','fontWeight':'700','textAlign':'center','letterSpacing':'0','marginBottom':'10px'}),
+            lbl('PABD vs TRADITIONAL IDS',AMBER),
             html.Div([
                 html.Div([
-                    html.Div('OUR FRAMEWORK',style={'color':GREEN,'fontFamily':MONO,'fontSize':'12px','fontWeight':'700','marginBottom':'5px'}),
+                    html.Div('PABD framework',style={'color':GREEN,'fontFamily':MONO,'fontSize':'12px','fontWeight':'700','marginBottom':'5px'}),
                     html.Div(f"Status:  {'FIRED' if S['pabd_fired'] else 'Monitoring'}",style={'color':GREEN if S['pabd_fired'] else DIM,'fontFamily':MONO,'fontSize':'12px'}),
                     html.Div(f"Step:  {S['pabd_step'] if S['pabd_fired'] else '--'}",style={'color':DIM,'fontFamily':MONO,'fontSize':'12px','marginTop':'3px'}),
-                    html.Div('Detects:  PRE-ATTACK PHASE',style={'color':DIM,'fontFamily':MONO,'fontSize':'12px','marginTop':'3px'}),
-                ],style={'flex':1,'padding':'10px','border':f'1px solid {GREEN}33','borderRadius':'6px','marginRight':'6px','background':f'{GREEN}06'}),
+                    html.Div('Detects: pre-attack phase',style={'color':DIM,'fontFamily':MONO,'fontSize':'12px','marginTop':'3px'}),
+                ],style={'flex':1,'padding':'10px','border':f'1px solid {GREEN}33','borderRadius':'10px','marginRight':'8px','background':'rgba(57,255,106,0.08)'}),
                 html.Div([
                     html.Div('Traditional IDS',style={'color':ORANGE,'fontFamily':MONO,'fontSize':'12px','fontWeight':'700','marginBottom':'5px'}),
                     html.Div(f"Status:  {'FIRED' if S['trad_fired'] else 'No alert'}",style={'color':ORANGE if S['trad_fired'] else DIM,'fontFamily':MONO,'fontSize':'12px'}),
                     html.Div(f"Step:  {S['trad_step'] if S['trad_fired'] else '--'}",style={'color':DIM,'fontFamily':MONO,'fontSize':'12px','marginTop':'3px'}),
-                    html.Div('Detects:  EXECUTION PHASE',style={'color':DIM,'fontFamily':MONO,'fontSize':'12px','marginTop':'3px'}),
+                    html.Div('Detects: execution phase',style={'color':DIM,'fontFamily':MONO,'fontSize':'12px','marginTop':'3px'}),
                 ],style={'flex':1,'padding':'10px','border':f'1px solid {ORANGE}33','borderRadius':'10px','background':f'{ORANGE}0D'}),
             ],style={'display':'flex','marginBottom':'8px'}),
             html.Div(
@@ -950,7 +963,11 @@ def update(n):
             ),
         ],className='hz card-panel',style={'padding':'18px 20px','borderColor':f'{AMBER}66'})
     else:
-        compare_box=html.Div()
+        compare_box=html.Div([
+            lbl('PABD vs TRADITIONAL IDS',AMBER),
+            html.Div('Comparison is off. Click "IDS compare" in the app bar to show detection lead time against a signature-style IDS baseline.',
+                     style={'color':DIM,'fontFamily':MONO,'fontSize':'12px','lineHeight':'1.5'}),
+        ],className='hz card-panel',style={'padding':'18px 20px'})
 
     log_items=[
         html.Div(e,className='log-row',style={'fontFamily':CODE,'color':DIM,'fontSize':'11.5px'})
@@ -959,7 +976,7 @@ def update(n):
 
     tp=S['total_packets'];fp=S['flagged_packets']
     pct=(fp/tp*100) if tp>0 else 0
-    hdr=f'Packets: {tp}  ·  Flagged: {fp} ({pct:.1f}%)  ·  {S["pps"]} pkt/s  ·  Step: {S["step"]}'
+    hdr=('Attack simulation: '+S['attack_type']) if (S['running'] and S['attack_mode']) else ('Monitoring normal traffic' if S['running'] else 'Idle — press Start monitoring')
 
     def kpi_tile(label, value, color, sub=None):
         return html.Div([
@@ -973,7 +990,7 @@ def update(n):
         kpi_tile('Packets processed', f'{tp:,}', TEXT, f'{S["pps"]} pkt/s'),
         kpi_tile('Flagged anomalous', f'{fp:,}', AMBER, f'{pct:.1f}% of traffic'),
         kpi_tile('Risk score', f'{S["rec_score"]:.3f}', risk_color, f'{S["metrics_breached"]}/6 metrics drifting'),
-        kpi_tile('Session step', f'{S["step"]}', BLUE, 'PABD fired' if S['pabd_fired'] else 'Monitoring'),
+        kpi_tile('Session step', f'{S["step"]}', BLUE, 'PABD fired' if S['pabd_fired'] else ('Monitoring' if S['running'] else 'Idle')),
     ],className='kpi-strip')
 
     return (net_items,anom_items,cusum_fig,rec_fig,net_graph_fig,

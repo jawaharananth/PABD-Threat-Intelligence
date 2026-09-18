@@ -14,3 +14,12 @@ output as current results** — they use:
 The current, authoritative pipeline is `cusum_adaptive.py` + `cusum_core.py`
 + `fusion_model.py`, evaluated across all 6 attack-containing days plus the
 Monday/Infiltration checks — see the main `README.md`'s Results section.
+
+Also here (moved in the cleanup pass): `data_generator.py` (synthetic
+traffic generator, no longer used by any pipeline step), `train_lstm_real.py`
+(predicted next-window attack fraction; superseded by
+`train_lstm_countdown_real.py`), `check_day_split.py`, `find_runs.py`.
+Stale artifacts they produced (`lstm_model.keras`, `lstm_model_real.keras`,
+`network_data.csv`, the `*_30s/_60s/_120s` window variants with the old
+6-column schema) were removed from the working tree; they remain in git
+history if ever needed.
