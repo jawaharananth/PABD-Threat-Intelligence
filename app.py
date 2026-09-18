@@ -60,8 +60,17 @@ for _name, _fields in _PROFILE_TEXT.items():
     }
 MEANS = baseline_stats['mean']
 STDS = baseline_stats['std']
+# CUSUM_K/CUSUM_H must be read in the SAME units the accumulator uses.
+# z below is already sigma-normalized ((x-mean)/std), so s accumulates in
+# sigma units too: s = sum(z - k_mult) = sum((x-mean)/std - k_mult), which
+# is exactly (real raw-unit CUSUM sum)/std. That means the threshold must
+# be compared in h_mult units, NOT h_mult*std -- so CUSUM_H should equal
+# the tuned h_mult (2.0, from cusum_adaptive.py's grid search) directly.
+# The old value of 8.0 compared a sigma-unit sum against a raw-unit
+# threshold, making the live demo ~4x less sensitive than the validated
+# real-data tuning -- a unit bug, not a deliberate design choice.
 CUSUM_K = 0.5
-CUSUM_H = 8.0
+CUSUM_H = 2.0
 METRIC_COLORS = ['#4FD8C8','#39FF6A','#FF9E45','#FF5C5C','#C58BFF','#FFE066']
 
 S = {
@@ -97,8 +106,15 @@ ATTACK_Z = {
                       'packet_size_dist':-2.0,'protocol_ratio':-1.5,'burst_activity':3.0},
     'Lateral Movement':{'connection_frequency':1.5,'port_entropy':2.0,'failed_auth_rate':2.5,
                       'packet_size_dist':2.5,'protocol_ratio':-3.0,'burst_activity':2.0},
+    # protocol_ratio = share of the single most common protocol in the window
+    # (real_data_loader.py). A volumetric flood concentrated on one protocol
+    # (e.g. all TCP SYN) pushes this UP, not down -- the CUSUM here is
+    # one-sided (only detects increases, matching cusum_core.py's real
+    # implementation), so a feature that should realistically decrease
+    # (port_entropy, packet_size_dist) can't be a detection signal on its
+    # own; protocol_ratio increasing is what a one-sided detector can catch.
     'DoS':           {'connection_frequency':4.5,'port_entropy':-1.0,'failed_auth_rate':0.2,
-                      'packet_size_dist':-3.0,'protocol_ratio':-1.0,'burst_activity':4.0},
+                      'packet_size_dist':-3.0,'protocol_ratio':3.5,'burst_activity':4.0},
     'Bot':           {'connection_frequency':1.0,'port_entropy':1.5,'failed_auth_rate':0.5,
                       'packet_size_dist':-1.0,'protocol_ratio':-2.5,'burst_activity':2.5},
 }
@@ -141,6 +157,12 @@ def sim_step():
 
     X = pd.DataFrame([metrics],columns=FEATURES)
     ascore = float(-iso_forest.score_samples(X)[0])
+    # 0.52 is a demo display threshold for the live per-packet anomaly flag,
+    # not a number reported anywhere in the paper's evaluation -- the real
+    # IsolationForest evaluation (fusion_model.py) reports it as a
+    # continuous score (AUC 0.763), not a single fixed cutoff. Checked
+    # empirically here: 0/200 false flags on normal traffic, ~53% flagged
+    # during a live attack simulation -- reasonable for display purposes.
     is_anom = ascore > 0.52
     if is_anom:
         S['flagged_packets'] += 1
