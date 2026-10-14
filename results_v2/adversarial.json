@@ -1,0 +1,30 @@
+{
+ "units": 420,
+ "threshold": "conformal alpha=0.01",
+ "clean_detection": 0.9238,
+ "by_family_clean": {
+  "Botnet": 0.9135,
+  "Brute Force": 1.0,
+  "DDoS": 1.0,
+  "DoS": 0.9545,
+  "Infiltration": 0.0,
+  "Internal Scan (post-compromise)": 0.8421,
+  "Port Scan": 1.0,
+  "Web Attack": 0.45
+ },
+ "slow": {
+  "2": 0.9548,
+  "5": 0.9524,
+  "20": 0.8881
+ },
+ "pad": {
+  "1.5": 0.9214,
+  "3": 0.8952,
+  "10": 0.7738
+ },
+ "chaff": {
+  "0.25": 0.9,
+  "0.5": 0.9143,
+  "0.75": 0.9238
+ }
+}

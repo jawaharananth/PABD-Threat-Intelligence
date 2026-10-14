@@ -3,3 +3,8 @@ __pycache__/
 .pytest_cache/
 *.log
 response.json
+
+# PABD 2.0 data and caches (large, regenerable)
+data_v2/
+results_v2/*.parquet
+results_v2/*.npz

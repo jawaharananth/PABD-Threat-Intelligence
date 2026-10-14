@@ -1,0 +1,539 @@
+{
+ "2017_test_units": {
+  "benign": 15998,
+  "attack": 420
+ },
+ "2017_ranking": {
+  "PABD 2.0 fused": {
+   "auc": 0.995,
+   "ap": 0.8198
+  },
+  "Distance-to-normal (learned representation)": {
+   "auc": 0.9546,
+   "ap": 0.5444
+  },
+  "FlowSeq reconstruction anomaly (negative result)": {
+   "auc": 0.3902,
+   "ap": 0.0208
+  },
+  "FlowSeq family head": {
+   "auc": 0.9816,
+   "ap": 0.7184
+  },
+  "E-GraphSAGE graph layer": {
+   "auc": 0.9416,
+   "ap": 0.4645
+  },
+  "Baseline: Random Forest on flow features": {
+   "auc": 0.99,
+   "ap": 0.8764
+  },
+  "Baseline: Isolation Forest": {
+   "auc": 0.778,
+   "ap": 0.0665
+  }
+ },
+ "2017_per_family_auc": {
+  "Port Scan": {
+   "fused": 0.9987,
+   "rf_baseline": 0.9873
+  },
+  "Internal Scan (post-compromise)": {
+   "fused": 0.9901,
+   "rf_baseline": 0.9584
+  },
+  "Brute Force": {
+   "fused": 0.9986,
+   "rf_baseline": 0.9986
+  },
+  "Web Attack": {
+   "fused": 0.9886,
+   "rf_baseline": 0.9634
+  },
+  "Infiltration": {
+   "fused": 0.9591,
+   "rf_baseline": 0.9445
+  },
+  "Botnet": {
+   "fused": 0.992,
+   "rf_baseline": 0.9907
+  },
+  "DoS": {
+   "fused": 0.9954,
+   "rf_baseline": 0.9955
+  },
+  "DDoS": {
+   "fused": 1.0,
+   "rf_baseline": 1.0
+  }
+ },
+ "2017_conformal": {
+  "0.001": {
+   "target_fpr": 0.001,
+   "benign_fpr": 0.00081,
+   "Botnet": 0.0,
+   "Brute Force": 0.0,
+   "DDoS": 1.0,
+   "DoS": 0.0152,
+   "Infiltration": 0.0,
+   "Internal Scan (post-compromise)": 0.2895,
+   "Port Scan": 0.55,
+   "Web Attack": 0.0
+  },
+  "0.01": {
+   "target_fpr": 0.01,
+   "benign_fpr": 0.01569,
+   "Botnet": 0.9135,
+   "Brute Force": 1.0,
+   "DDoS": 1.0,
+   "DoS": 0.9545,
+   "Infiltration": 0.0,
+   "Internal Scan (post-compromise)": 0.8421,
+   "Port Scan": 1.0,
+   "Web Attack": 0.45
+  },
+  "0.05": {
+   "target_fpr": 0.05,
+   "benign_fpr": 0.04619,
+   "Botnet": 1.0,
+   "Brute Force": 1.0,
+   "DDoS": 1.0,
+   "DoS": 0.9848,
+   "Infiltration": 0.6667,
+   "Internal Scan (post-compromise)": 0.9737,
+   "Port Scan": 1.0,
+   "Web Attack": 1.0
+  }
+ },
+ "meta_weights": {
+  "dist": 1.439,
+  "seq_attack": 0.717,
+  "graph": 1.047,
+  "log_n": 1.325,
+  "log_dst": -0.47
+ },
+ "2017_detection_delay_alpha_0.01": [
+  {
+   "day": "friday",
+   "family": "Botnet",
+   "host": "192.168.10.14",
+   "units": 18,
+   "delay_s": 0.0
+  },
+  {
+   "day": "friday",
+   "family": "Botnet",
+   "host": "192.168.10.15",
+   "units": 25,
+   "delay_s": 0.0
+  },
+  {
+   "day": "friday",
+   "family": "Botnet",
+   "host": "192.168.10.5",
+   "units": 18,
+   "delay_s": 0.0
+  },
+  {
+   "day": "friday",
+   "family": "Botnet",
+   "host": "192.168.10.8",
+   "units": 25,
+   "delay_s": 0.0
+  },
+  {
+   "day": "friday",
+   "family": "Botnet",
+   "host": "192.168.10.9",
+   "units": 18,
+   "delay_s": 0.0
+  },
+  {
+   "day": "friday",
+   "family": "DDoS",
+   "host": "172.16.0.1",
+   "units": 24,
+   "delay_s": 0.0
+  },
+  {
+   "day": "friday",
+   "family": "Port Scan",
+   "host": "172.16.0.1",
+   "units": 20,
+   "delay_s": 0.0
+  },
+  {
+   "day": "thursday",
+   "family": "Infiltration",
+   "host": "192.168.10.25",
+   "units": 2,
+   "delay_s": 260.0
+  },
+  {
+   "day": "thursday",
+   "family": "Infiltration",
+   "host": "192.168.10.8",
+   "units": 1,
+   "delay_s": 1620.0
+  },
+  {
+   "day": "thursday",
+   "family": "Internal Scan (post-compromise)",
+   "host": "192.168.10.8",
+   "units": 38,
+   "delay_s": 0.0
+  },
+  {
+   "day": "thursday",
+   "family": "Web Attack",
+   "host": "172.16.0.1",
+   "units": 20,
+   "delay_s": 0.0
+  },
+  {
+   "day": "tuesday",
+   "family": "Brute Force",
+   "host": "172.16.0.1",
+   "units": 145,
+   "delay_s": 0.0
+  },
+  {
+   "day": "wednesday",
+   "family": "DoS",
+   "host": "172.16.0.1",
+   "units": 66,
+   "delay_s": 0.0
+  }
+ ],
+ "2017_killchain": {
+  "attack_stage_accuracy": 0.886,
+  "benign_called_benign": 0.9932,
+  "per_stage": {
+   "Reconnaissance": 0.8438,
+   "Initial Access": 0.9673,
+   "Command and Control": 0.7413,
+   "Impact": 0.9588
+  }
+ },
+ "infiltration_chain": {
+  "host": "192.168.10.8",
+  "first_infiltration_flow": "2017-07-06 17:19:00",
+  "first_internal_scan": "2017-07-06 17:33:30",
+  "first_alarm_alpha_0.01": "2017-07-06 17:30:20",
+  "alarm_before_scan_s": 190.0,
+  "stage_at_scan": "Reconnaissance"
+ },
+ "drift_2017_benign": {
+  "alarm_index": 5402,
+  "n": 15998
+ },
+ "2018_adaptation": {
+  "first_hour_units": 43041,
+  "attack_units_in_first_hour": 0
+ },
+ "2018_units": {
+  "benign": 435467,
+  "attack": 22428,
+  "families": {
+   "Benign": 435467,
+   "Botnet": 17783,
+   "DDoS": 3610,
+   "Brute Force": 544,
+   "DoS": 337,
+   "Web Attack": 154
+  }
+ },
+ "2018_ranking": {
+  "PABD 2.0 fused": {
+   "auc": 0.9916,
+   "ap": 0.8897
+  },
+  "Distance-to-normal, adapted on first hour (no labels)": {
+   "auc": 0.9815,
+   "ap": 0.5314
+  },
+  "FlowSeq reconstruction anomaly (negative result)": {
+   "auc": 0.0346,
+   "ap": 0.0253
+  },
+  "FlowSeq family head": {
+   "auc": 0.7202,
+   "ap": 0.084
+  },
+  "E-GraphSAGE graph layer": {
+   "auc": 0.9078,
+   "ap": 0.2876
+  },
+  "Baseline: Random Forest on flow features": {
+   "auc": 0.8605,
+   "ap": 0.367
+  },
+  "Baseline: Isolation Forest (2017 normal)": {
+   "auc": 0.2775,
+   "ap": 0.0334
+  },
+  "Baseline: Isolation Forest, adapted on first hour": {
+   "auc": 0.7317,
+   "ap": 0.0796
+  }
+ },
+ "2018_per_family_auc": {
+  "Brute Force": {
+   "fused": 0.9996,
+   "rf_baseline": 0.5083
+  },
+  "Web Attack": {
+   "fused": 0.6905,
+   "rf_baseline": 0.767
+  },
+  "Botnet": {
+   "fused": 0.9975,
+   "rf_baseline": 0.9377
+  },
+  "DoS": {
+   "fused": 0.9997,
+   "rf_baseline": 0.9809
+  },
+  "DDoS": {
+   "fused": 0.9731,
+   "rf_baseline": 0.5261
+  }
+ },
+ "2018_conformal_with_2017_calibration": {
+  "0.001": {
+   "target_fpr": 0.001,
+   "benign_fpr": 0.0,
+   "Botnet": 0.0,
+   "Brute Force": 0.0,
+   "DDoS": 0.0,
+   "DoS": 0.0356,
+   "Web Attack": 0.0
+  },
+  "0.01": {
+   "target_fpr": 0.01,
+   "benign_fpr": 0.05423,
+   "Botnet": 0.9978,
+   "Brute Force": 1.0,
+   "DDoS": 0.9058,
+   "DoS": 0.997,
+   "Web Attack": 0.0455
+  },
+  "0.05": {
+   "target_fpr": 0.05,
+   "benign_fpr": 0.28627,
+   "Botnet": 0.9998,
+   "Brute Force": 1.0,
+   "DDoS": 0.982,
+   "DoS": 1.0,
+   "Web Attack": 0.4026
+  }
+ },
+ "drift_2018_benign": {
+  "alarm_index": 69,
+  "n": 435467,
+  "alarm_time": "2018-02-14 13:28:30"
+ },
+ "2018_conformal_recalibrated_first_hour": {
+  "0.001": {
+   "target_fpr": 0.001,
+   "benign_fpr": 0.00175,
+   "Botnet": 0.2741,
+   "Brute Force": 1.0,
+   "DDoS": 0.0842,
+   "DoS": 0.9941,
+   "Web Attack": 0.0065
+  },
+  "0.01": {
+   "target_fpr": 0.01,
+   "benign_fpr": 0.00998,
+   "Botnet": 0.9876,
+   "Brute Force": 1.0,
+   "DDoS": 0.9053,
+   "DoS": 0.9941,
+   "Web Attack": 0.013
+  },
+  "0.05": {
+   "target_fpr": 0.05,
+   "benign_fpr": 0.03797,
+   "Botnet": 0.997,
+   "Brute Force": 1.0,
+   "DDoS": 0.9058,
+   "DoS": 0.997,
+   "Web Attack": 0.026
+  }
+ },
+ "2018_recalibration_units": 43041,
+ "2018_detection_delay_alpha_0.01": [
+  {
+   "day": "Friday-02-03-2018",
+   "family": "Botnet",
+   "host": "172.31.69.10",
+   "units": 2018,
+   "delay_s": 10.0
+  },
+  {
+   "day": "Friday-02-03-2018",
+   "family": "Botnet",
+   "host": "172.31.69.12",
+   "units": 380,
+   "delay_s": 10.0
+  },
+  {
+   "day": "Friday-02-03-2018",
+   "family": "Botnet",
+   "host": "172.31.69.14",
+   "units": 1913,
+   "delay_s": 0.0
+  },
+  {
+   "day": "Friday-02-03-2018",
+   "family": "Botnet",
+   "host": "172.31.69.17",
+   "units": 1920,
+   "delay_s": 10.0
+  },
+  {
+   "day": "Friday-02-03-2018",
+   "family": "Botnet",
+   "host": "172.31.69.23",
+   "units": 1903,
+   "delay_s": 10.0
+  },
+  {
+   "day": "Friday-02-03-2018",
+   "family": "Botnet",
+   "host": "172.31.69.26",
+   "units": 1856,
+   "delay_s": 50.0
+  },
+  {
+   "day": "Friday-02-03-2018",
+   "family": "Botnet",
+   "host": "172.31.69.29",
+   "units": 1860,
+   "delay_s": 0.0
+  },
+  {
+   "day": "Friday-02-03-2018",
+   "family": "Botnet",
+   "host": "172.31.69.30",
+   "units": 2040,
+   "delay_s": 10.0
+  },
+  {
+   "day": "Friday-02-03-2018",
+   "family": "Botnet",
+   "host": "172.31.69.6",
+   "units": 2000,
+   "delay_s": 0.0
+  },
+  {
+   "day": "Friday-02-03-2018",
+   "family": "Botnet",
+   "host": "172.31.69.8",
+   "units": 1893,
+   "delay_s": 0.0
+  },
+  {
+   "day": "Friday-23-02-2018",
+   "family": "Web Attack",
+   "host": "18.218.115.60",
+   "units": 154,
+   "delay_s": 18690.0
+  },
+  {
+   "day": "Thursday-15-02-2018",
+   "family": "DoS",
+   "host": "18.217.165.70",
+   "units": 249,
+   "delay_s": 0.0
+  },
+  {
+   "day": "Thursday-15-02-2018",
+   "family": "DoS",
+   "host": "18.219.211.138",
+   "units": 88,
+   "delay_s": 0.0
+  },
+  {
+   "day": "Wednesday-14-02-2018",
+   "family": "Brute Force",
+   "host": "13.58.98.64",
+   "units": 544,
+   "delay_s": 0.0
+  },
+  {
+   "day": "Wednesday-21-02-2018",
+   "family": "DDoS",
+   "host": "18.216.200.189",
+   "units": 360,
+   "delay_s": 14540.0
+  },
+  {
+   "day": "Wednesday-21-02-2018",
+   "family": "DDoS",
+   "host": "18.216.24.42",
+   "units": 360,
+   "delay_s": 14510.0
+  },
+  {
+   "day": "Wednesday-21-02-2018",
+   "family": "DDoS",
+   "host": "18.218.11.51",
+   "units": 360,
+   "delay_s": 14520.0
+  },
+  {
+   "day": "Wednesday-21-02-2018",
+   "family": "DDoS",
+   "host": "18.218.115.60",
+   "units": 360,
+   "delay_s": 14500.0
+  },
+  {
+   "day": "Wednesday-21-02-2018",
+   "family": "DDoS",
+   "host": "18.218.229.235",
+   "units": 362,
+   "delay_s": 14470.0
+  },
+  {
+   "day": "Wednesday-21-02-2018",
+   "family": "DDoS",
+   "host": "18.218.55.126",
+   "units": 365,
+   "delay_s": 14550.0
+  },
+  {
+   "day": "Wednesday-21-02-2018",
+   "family": "DDoS",
+   "host": "18.219.32.43",
+   "units": 360,
+   "delay_s": 14510.0
+  },
+  {
+   "day": "Wednesday-21-02-2018",
+   "family": "DDoS",
+   "host": "18.219.5.43",
+   "units": 360,
+   "delay_s": 14540.0
+  },
+  {
+   "day": "Wednesday-21-02-2018",
+   "family": "DDoS",
+   "host": "18.219.9.1",
+   "units": 362,
+   "delay_s": 14520.0
+  },
+  {
+   "day": "Wednesday-21-02-2018",
+   "family": "DDoS",
+   "host": "52.14.136.135",
+   "units": 361,
+   "delay_s": 14530.0
+  }
+ ],
+ "drift_2018_benign_after_recalibration": {
+  "alarm_index": 6282
+ }
+}
