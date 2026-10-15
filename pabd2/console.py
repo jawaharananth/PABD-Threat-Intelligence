@@ -88,20 +88,27 @@ def build_app(day="thursday", speed=60, start=None):
             card([html.Div("KILL CHAIN  ·  STAGE BELIEF PER HOST", style={"color": GOLD, "fontSize": "11px", "letterSpacing": "3px", "fontWeight": 600}),
                   dcc.Graph(id="g-chain", config={"displayModeBar": False}, style={"height": "250px"})], flex="1.35"),
             card([html.Div("INCIDENT REPORT", style={"color": GOLD, "fontSize": "11px", "letterSpacing": "3px", "fontWeight": 600}),
-                  html.Div(id="report", style={"whiteSpace": "pre-wrap", "fontSize": "14px", "lineHeight": "1.55",
+                  dcc.Markdown(id="report", style={ "fontSize": "14px", "lineHeight": "1.55",
                                                "height": "250px", "overflowY": "auto", "marginTop": "8px", "color": "#d6dde4"},
                            children="Select an alert to investigate.")], flex="1"),
         ], style={"display": "flex", "gap": "12px"}),
         dcc.Interval(id="tick", interval=1000), dcc.Store(id="now", data=0), dcc.Store(id="sel"),
+        dcc.Location(id="url"),
     ])
 
     def at(sec):
         return t0 + pd.Timedelta(seconds=sec)
 
-    @app.callback(Output("now", "data"), Input("tick", "n_intervals"), State("now", "data"))
-    def advance(_, s):
+    from urllib.parse import parse_qs
+
+    @app.callback(Output("now", "data"), Output("tick", "disabled"), Input("tick", "n_intervals"),
+                  Input("url", "search"), State("now", "data"))
+    def advance(_, search, s):
+        q = parse_qs((search or "").lstrip("?"))
+        if "t" in q:   # frame mode: a fixed replay time, no ticking (for film capture)
+            return (pd.Timestamp(f"{u.t.min().date()} {q['t'][0]}") - t0).total_seconds(), True
         s = (s or 0) + speed
-        return 0 if at(s) > t1 else s
+        return (0 if at(s) > t1 else s), False
 
     @app.callback(Output("clock", "children"), Output("k-hosts", "children"), Output("k-alerts", "children"),
                   Output("k-fpr", "children"), Output("k-drift", "children"), Output("g-net", "figure"),
@@ -137,7 +144,7 @@ def build_app(day="thursday", speed=60, start=None):
                                  marker=dict(size=[22 if s_ != "Benign" else (14 if h == "Internet" else (9 if h in active else 6)) for h, s_ in zip(hosts, stg)],
                                              color=[STAGE_COL[s_] if s_ != "Benign" else ("#5b6b7c" if h in active else "#26303b") for h, s_ in zip(hosts, stg)],
                                              line=dict(color=BG, width=1.5)),
-                                 hovertext=[f"{h} � {s_}" for h, s_ in zip(hosts, stg)], hoverinfo="text"))
+                                 hovertext=[f"{h} · {s_}" for h, s_ in zip(hosts, stg)], hoverinfo="text"))
         xr = [min(xs) - 0.15, max(xs) + 0.15]; yr = [min(ys) - 0.15, max(ys) + 0.15]
         fig.update_layout(paper_bgcolor=PANEL, plot_bgcolor=PANEL, margin=dict(l=4, r=4, t=4, b=4),
                           xaxis=dict(visible=False, range=xr), yaxis=dict(visible=False, range=yr))
@@ -150,15 +157,15 @@ def build_app(day="thursday", speed=60, start=None):
             ch.add_trace(go.Scatter(x=hh.t, y=[i] * len(hh), mode="markers", marker=dict(symbol="square", size=9,
                          color=[STAGE_COL[STAGES[k]] for k in st]), hovertext=[STAGES[k] for k in st], hoverinfo="text", showlegend=False))
         ch.update_layout(paper_bgcolor=PANEL, plot_bgcolor=PANEL, margin=dict(l=110, r=8, t=4, b=24),
-                         yaxis=dict(tickvals=list(range(len(top))), ticktext=top[::-1], color=DIM, showgrid=False),
-                         xaxis=dict(color=DIM, showgrid=False))
+                         yaxis=dict(tickvals=list(range(len(top))), ticktext=top[::-1], color=DIM, showgrid=False, zeroline=False),
+                         xaxis=dict(color=DIM, showgrid=False, zeroline=False))
         feed = []
         for r in alerts.sort_values("t", ascending=False).head(25).itertuples():
             col = STAGE_COL.get(r.stage_pred, GOLD)
             feed.append(html.Div(id={"type": "alert", "i": int(r.index)}, n_clicks=0, style={
                 "borderLeft": f"3px solid {col}", "padding": "8px 10px", "margin": "6px 0", "cursor": "pointer",
                 "background": "#121922", "borderRadius": "8px"}, children=[
-                html.Div([html.Span(r.family_guess, style={"fontWeight": 600}),
+                html.Div([html.Span(r.family_guess if r.family_guess != "Benign" else "Anomalous behaviour", style={"fontWeight": 600}),
                           html.Span(f"   {(1 - r.p_value) * 100:.2f}%", style={"color": GOLD, "float": "right"})]),
                 html.Div(f"{r.host}  ·  {r.t.strftime('%H:%M:%S')}  ·  {r.stage_pred}", style={"color": DIM, "fontSize": "12px"})]))
         return (now.strftime("%H:%M:%S"), f"{seen.host.nunique()}", f"{len(alerts)}",
@@ -166,7 +173,14 @@ def build_app(day="thursday", speed=60, start=None):
 
     from dash import ALL
 
-    @app.callback(Output("report", "children"), Input({"type": "alert", "i": ALL}, "n_clicks"), prevent_initial_call=True)
+    @app.callback(Output("report", "children"), Input("url", "search"))
+    def preset_report(search):
+        q = parse_qs((search or "").lstrip("?"))
+        f = os.path.join(RES, f"report_{q['report'][0]}.txt") if "report" in q else None
+        return open(f, encoding="utf-8").read() if f and os.path.exists(f) else no_update
+
+    @app.callback(Output("report", "children", allow_duplicate=True), Input({"type": "alert", "i": ALL}, "n_clicks"),
+                  prevent_initial_call=True)
     def investigate(clicks):
         if not ctx.triggered_id or not any(clicks): return no_update
         i = ctx.triggered_id["i"]; r = u[u["index"] == i].iloc[0]

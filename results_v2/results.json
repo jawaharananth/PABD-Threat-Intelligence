@@ -535,5 +535,28 @@
  ],
  "drift_2018_benign_after_recalibration": {
   "alarm_index": 6282
+ },
+ "lofo": {
+  "Internal Scan (post-compromise)": {
+   "units": 38,
+   "pabd2_auc": 0.9207,
+   "rf_auc": 0.8708,
+   "pabd2_detect_at_1pct": 0.5,
+   "rf_detect_at_1pct": 0.3158
+  },
+  "Botnet": {
+   "units": 104,
+   "pabd2_auc": 0.641,
+   "rf_auc": 0.8231,
+   "pabd2_detect_at_1pct": 0.0,
+   "rf_detect_at_1pct": 0.0192
+  },
+  "Web Attack": {
+   "units": 20,
+   "pabd2_auc": 0.9896,
+   "rf_auc": 0.975,
+   "pabd2_detect_at_1pct": 0.45,
+   "rf_detect_at_1pct": 0.35
+  }
  }
 }

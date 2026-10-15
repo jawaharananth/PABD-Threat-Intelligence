@@ -1,6 +1,8 @@
 {
+ "model": "standard",
  "units": 420,
- "threshold": "conformal alpha=0.01",
+ "threshold": "own 99th percentile of CAL benign (alpha=0.01)",
+ "test_benign_false_alarm_rate": 0.01569,
  "clean_detection": 0.9238,
  "by_family_clean": {
   "Botnet": 0.9135,

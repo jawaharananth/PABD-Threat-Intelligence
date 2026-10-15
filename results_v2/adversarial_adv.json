@@ -1,0 +1,32 @@
+{
+ "model": "_adv",
+ "units": 420,
+ "threshold": "own 99th percentile of CAL benign (alpha=0.01)",
+ "test_benign_false_alarm_rate": 0.01013,
+ "clean_detection": 0.8976,
+ "by_family_clean": {
+  "Botnet": 0.8269,
+  "Brute Force": 1.0,
+  "DDoS": 1.0,
+  "DoS": 0.9697,
+  "Infiltration": 0.3333,
+  "Internal Scan (post-compromise)": 0.7632,
+  "Port Scan": 1.0,
+  "Web Attack": 0.4
+ },
+ "slow": {
+  "2": 0.9,
+  "5": 0.9024,
+  "20": 0.9048
+ },
+ "pad": {
+  "1.5": 0.8976,
+  "3": 0.9071,
+  "10": 0.9333
+ },
+ "chaff": {
+  "0.25": 0.9286,
+  "0.5": 0.95,
+  "0.75": 0.9571
+ }
+}

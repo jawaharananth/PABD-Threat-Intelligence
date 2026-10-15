@@ -1,0 +1,9 @@
+**Incident Report: Internal Scan Post-Compromise**
+
+- The incident occurred on July 6, 2017, at 17:33:30, with a high confidence level (>99.99%) and a p-value of 9.5e-06.
+- The system flagged the incident as a "Internal Scan (post-compromise)" due to the suspicious network service discovery activity, indicating a potential compromise of an internal host.
+- This incident is located in the Reconnaissance stage of the kill chain, where the attacker is gathering information about the network.
+- The next likely step is lateral movement to the hosts it just mapped, as indicated by the forecast_next event.
+- To approve this incident, a human analyst should recommend rate-limiting or blocking the scanning source at the perimeter and monitoring for follow-on access attempts.
+
+— written by llm:llama3.2 from PABD evidence; actions need human approval

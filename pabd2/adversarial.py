@@ -67,7 +67,6 @@ def run(budgets=None, tag=""):
     st = json.load(open(os.path.join(OUT, "fusion_state.json")))
     attack = np.flatnonzero((u.role == "test").to_numpy() & ~u.family.isin(["Benign", "Attempted"]).to_numpy())
     benign_pool = np.flatnonzero(pd.read_parquet(os.path.join(CACHE, "flows_2017.parquet"), columns=["family"]).family.to_numpy() == "Benign")
-    cal = np.array(st["cal_benign_fused"]); thr = np.quantile(cal, 0.99)
     st["mu"], st["sd"] = np.array(st["mu"]), np.array(st["sd"])
 
     from .evaluate import Normality
@@ -79,9 +78,17 @@ def run(budgets=None, tag=""):
         return x @ np.array(st["w"]) + st["b"]
 
     base = u.iloc[attack]
-    res = {"units": int(len(attack)), "threshold": "conformal alpha=0.01",
-           "clean_detection": round(float((base.fused > thr).mean()), 4)}
-    res["by_family_clean"] = base.assign(d=base.fused > thr).groupby("family").d.mean().round(4).to_dict()
+    # this model's own fused scores on every 2017 unit -> its own threshold on CAL benign
+    sc17 = np.load(os.path.join(CACHE, f"seqscores_2017{tag}.npz"))
+    att17 = 1 - sc17["proba"][:, list(sc17["families"]).index("Benign")]
+    f17 = fused(sc17["emb"], att17, u.graph.to_numpy(), u.log_n.to_numpy(), u.log_dst.to_numpy())
+    cal_b = ((u.role == "cal") & (u.family == "Benign")).to_numpy()
+    test_b = ((u.role == "test") & (u.family == "Benign")).to_numpy()
+    thr = np.quantile(f17[cal_b], 0.99)
+    res = {"model": tag or "standard", "units": int(len(attack)), "threshold": "own 99th percentile of CAL benign (alpha=0.01)",
+           "test_benign_false_alarm_rate": round(float((f17[test_b] > thr).mean()), 5),
+           "clean_detection": round(float((f17[attack] > thr).mean()), 4)}
+    res["by_family_clean"] = base.assign(d=f17[attack] > thr).groupby("family").d.mean().round(4).to_dict()
     for kind, ss in budgets.items():
         res[kind] = {}
         for s in ss:
@@ -105,4 +112,6 @@ def run(budgets=None, tag=""):
 
 
 if __name__ == "__main__":
-    print(run())
+    import sys
+    tag = sys.argv[sys.argv.index("--tag") + 1] if "--tag" in sys.argv else ""
+    print(run(tag=tag))
